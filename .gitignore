@@ -30,7 +30,8 @@ ENV/
 # Jupyter Notebook
 .ipynb_checkpoints
 
-# Data files (often too large for git)
+# Data files (confidential)
+data
 data/raw/*
 data/processed/*
 !data/raw/.gitkeep

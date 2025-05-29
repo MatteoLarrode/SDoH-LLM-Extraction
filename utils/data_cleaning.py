@@ -1,0 +1,115 @@
+# ============================================
+# ==== Helper functions for data cleaning ====
+# ============================================
+import pandas as pd
+import numpy as np
+import re
+
+def clean_na_variations(text):
+        """Remove various NA representations and normalize text"""
+        if pd.isna(text):
+            return np.nan
+        
+        # Convert to string
+        text = str(text).strip()
+        
+        # Define NA variations (case-insensitive)
+        na_patterns = [
+            r'^n/?a$',           # n/a, na, N/A, NA
+            r'^not applicable$',  # not applicable
+            r'^none$',           # none
+            r'^nil$',            # nil
+            r'^-+$',             # dashes like -, --, ---
+            r'^\.+$',            # dots like ., .., ...
+            r'^null$',           # null
+            r'^empty$',          # empty
+            r'^blank$',          # blank
+            r'^\s*$'             # whitespace only
+        ]
+        
+        # Check if text matches any NA pattern
+        for pattern in na_patterns:
+            if re.match(pattern, text, re.IGNORECASE):
+                return np.nan
+        
+        return text
+
+def split_into_sentences(text):
+        """Split text into sentences and initial cleaning"""
+        if pd.isna(text):
+            return []
+        
+        # Basic sentence splitting (you might want to use more sophisticated NLP tools)
+        sentences = re.split(r'[.!?]+', str(text))
+        
+        # Clean and filter sentences
+        cleaned_sentences = []
+        for sentence in sentences:
+            sentence = sentence.strip()
+            # Remove very short sentences (likely not meaningful)
+            if len(sentence) > 5:
+                cleaned_sentences.append(sentence)
+        
+        return cleaned_sentences
+
+def remove_duplicate_sentences_per_case(df):
+        """
+        Remove duplicate sentences within each case reference.
+        As was done in Keloth et al. (2025).
+        """
+        print("Removing duplicate sentences within cases...")
+        
+        # Group by Case Reference
+        grouped = df.groupby('Case Reference')
+        
+        cleaned_rows = []
+        total_original_sentences = 0
+        total_unique_sentences = 0
+        
+        for case_ref, group in grouped:
+            # Collect all sentences for this case
+            all_sentences = []
+            
+            for idx, row in group.iterrows():
+                sentences = split_into_sentences(row['Referral Notes (depersonalised)'])
+                all_sentences.extend(sentences)
+            
+            total_original_sentences += len(all_sentences)
+            
+            # Remove duplicates while preserving order
+            unique_sentences = []
+            seen_sentences = set()
+            
+            for sentence in all_sentences:
+                # Normalize sentence for comparison (lowercase, remove extra whitespace)
+                normalized = re.sub(r'\s+', ' ', sentence.lower().strip())
+                
+                if normalized not in seen_sentences and len(normalized) > 0:
+                    seen_sentences.add(normalized)
+                    unique_sentences.append(sentence)
+            
+            total_unique_sentences += len(unique_sentences)
+            
+            # If we have unique sentences, create new rows
+            if unique_sentences:
+                # Take the first row as template
+                template_row = group.iloc[0].copy()
+                
+                # Combine unique sentences back into referral notes
+                combined_notes = '. '.join(unique_sentences)
+                if not combined_notes.endswith('.'):
+                    combined_notes += '.'
+                
+                template_row['Referral Notes (depersonalised)'] = combined_notes
+                cleaned_rows.append(template_row)
+        
+        print(f"Original sentences: {total_original_sentences}")
+        print(f"Unique sentences: {total_unique_sentences}")
+        print(f"Sentences removed: {total_original_sentences - total_unique_sentences}")
+        
+        # Create new dataframe
+        if cleaned_rows:
+            result_df = pd.DataFrame(cleaned_rows)
+            return result_df.reset_index(drop=True)
+        else:
+            return pd.DataFrame()
