@@ -39,12 +39,11 @@ STRICT RULES:
     
     prompt = f"""{task_description}
 
-SENTENCE TO ANALYZE:
-{sentence}
+Input: {sentence}
 
 Response must be a comma-separated list of SDoH factors embedded with <LIST> and </LIST>.
 
-<LIST>"""
+"""
     
     return prompt
 
@@ -104,12 +103,11 @@ STRICT RULES:
     
     prompt = f"""{task_description}
 
-SENTENCE TO ANALYZE:
-{sentence}
+Input: {sentence}
 
 Response must be a comma-separated list of SDoH factors embedded with <LIST> and </LIST>.
 
-<LIST>"""
+"""
     
     return prompt
 
@@ -127,20 +125,20 @@ Employment status, Housing issues, Transportation issues, Parental status, Relat
 If the sentence does NOT mention any of the above categories, return: "NoSDoH"
 
 EXAMPLES:
-Sentence: "John is unemployed and lives with his elderly mother."
-<LIST>Employment status, Relationship status</LIST>
+Example 1: Input: "John is unemployed and lives with his elderly mother."
+Output: <LIST>Employment status, Relationship status</LIST>
 
-Sentence: "She struggles to afford groceries and has no car to get to the store."
-<LIST>Financial issues, Transportation issues, Food insecurity</LIST>
+Example 2: Input: "She struggles to afford groceries and has no car to get to the store."
+Output: <LIST>Financial issues, Transportation issues, Food insecurity</LIST>
 
-Sentence: "The patient smokes cigarettes and drinks alcohol daily."
-<LIST>Substance use</LIST>
+Example 3: Input: "The patient smokes cigarettes and drinks alcohol daily."
+Output: <LIST>Substance use</LIST>
 
-Sentence: "He has three young children at home and receives help from his sister."
-<LIST>Parental status, Social support</LIST>
+Example 4: Input: "He has three young children at home and receives help from his sister."
+Output: <LIST>Parental status, Social support</LIST>
 
-Sentence: "The patient was prescribed medication for diabetes."
-<LIST>NoSDoH</LIST>
+Example 5: Input: "The patient was prescribed medication for diabetes."
+Output: <LIST>NoSDoH</LIST>
 
 STRICT RULES: 
 - You MUST only use the exact categories listed above OR "NoSDoH"
@@ -158,20 +156,20 @@ Employment status, Housing issues, Transportation issues, Parental status, Relat
 If the sentence does NOT mention any of the above categories, return: "NoSDoH"
 
 EXAMPLES:
-Sentence: "John is unemployed and lives with his elderly mother."
-<LIST>Employment status[adverse], Relationship status[non-adverse]</LIST>
+Example 1: "John is unemployed and lives with his elderly mother."
+Output: <LIST>Employment status[adverse], Relationship status[non-adverse]</LIST>
 
-Sentence: "She struggles to afford groceries and has no car to get to the store."
-<LIST>Financial issues[adverse], Transportation issues[adverse], Food insecurity[adverse]</LIST>
+Example 2: "She struggles to afford groceries and has no car to get to the store."
+Output: <LIST>Financial issues[adverse], Transportation issues[adverse], Food insecurity[adverse]</LIST>
 
-Sentence: "The patient smokes cigarettes and drinks alcohol daily."
-<LIST>Substance use[adverse]</LIST>
+Example 3: "The patient smokes cigarettes and drinks alcohol daily."
+Output: <LIST>Substance use[adverse]</LIST>
 
-Sentence: "He has three young children at home and receives help from his sister."
-<LIST>Parental status[non-adverse], Social support[non-adverse]</LIST>
+Example 4: "He has three young children at home and receives help from his sister."
+Output: <LIST>Parental status[non-adverse], Social support[non-adverse]</LIST>
 
-Sentence: "The patient was prescribed medication for diabetes."
-<LIST>NoSDoH</LIST>
+Example 5: "The patient was prescribed medication for diabetes."
+Output: <LIST>NoSDoH</LIST>
 
 STRICT RULES:
 - For EVERY SDoH mention found, you MUST classify it as either "[adverse]" or "[non-adverse]"
@@ -182,12 +180,11 @@ STRICT RULES:
     
     prompt = f"""{task_description}
 
-SENTENCE TO ANALYZE:
-{sentence}
+Input: {sentence}
 
 Response must be a comma-separated list of SDoH factors embedded with <LIST> and </LIST>.
 
-<LIST>"""
+"""
     
     return prompt
 
@@ -214,20 +211,20 @@ For the sentence below, identify if it mentions ANY of these 10 categories:
 If the sentence does NOT mention any of the above categories, return: "NoSDoH"
 
 EXAMPLES:
-Sentence: "John is unemployed and lives with his elderly mother."
-<LIST>Employment status, Relationship status</LIST>
+Example 1: "John is unemployed and lives with his elderly mother."
+Output: <LIST>Employment status, Relationship status</LIST>
 
-Sentence: "She struggles to afford groceries and has no car to get to the store."
-<LIST>Financial issues, Transportation issues, Food insecurity</LIST>
+Example 2: "She struggles to afford groceries and has no car to get to the store."
+Output: <LIST>Financial issues, Transportation issues, Food insecurity</LIST>
 
-Sentence: "The patient smokes cigarettes and drinks alcohol daily."
-<LIST>Substance use</LIST>
+Example 3: "The patient smokes cigarettes and drinks alcohol daily."
+Output: <LIST>Substance use</LIST>
 
-Sentence: "He has three young children at home and receives help from his sister."
-<LIST>Parental status, Social support</LIST>
+Example 4: "He has three young children at home and receives help from his sister."
+Output: <LIST>Parental status, Social support</LIST>
 
-Sentence: "The patient was prescribed medication for diabetes."
-<LIST>NoSDoH</LIST>
+Example 5: "The patient was prescribed medication for diabetes."
+Output: <LIST>NoSDoH</LIST>
 
 STRICT RULES: 
 - You MUST only use the exact categories listed above OR "NoSDoH"
@@ -255,20 +252,20 @@ For the sentence below, identify if it mentions ANY of these 10 categories and c
 If the sentence does NOT mention any of the above categories, return: "NoSDoH"
 
 EXAMPLES:
-Sentence: "John is unemployed and lives with his elderly mother."
-<LIST>Employment status[adverse], Relationship status[non-adverse]</LIST>
+Example 1: "John is unemployed and lives with his elderly mother."
+Output: <LIST>Employment status[adverse], Relationship status[non-adverse]</LIST>
 
-Sentence: "She struggles to afford groceries and has no car to get to the store."
-<LIST>Financial issues[adverse], Transportation issues[adverse], Food insecurity[adverse]</LIST>
+Example 1: "She struggles to afford groceries and has no car to get to the store."
+Output: <LIST>Financial issues[adverse], Transportation issues[adverse], Food insecurity[adverse]</LIST>
 
-Sentence: "The patient smokes cigarettes and drinks alcohol daily."
-<LIST>Substance use[adverse]</LIST>
+Example 1: "The patient smokes cigarettes and drinks alcohol daily."
+Output: <LIST>Substance use[adverse]</LIST>
 
-Sentence: "He has three young children at home and receives help from his sister."
-<LIST>Parental status[non-adverse], Social support[non-adverse]</LIST>
+Example 1: "He has three young children at home and receives help from his sister."
+Output: <LIST>Parental status[non-adverse], Social support[non-adverse]</LIST>
 
-Sentence: "The patient was prescribed medication for diabetes."
-<LIST>NoSDoH</LIST>
+Example 1: "The patient was prescribed medication for diabetes."
+Output: <LIST>NoSDoH</LIST>
 
 STRICT RULES:
 - For EVERY SDoH mention found, you MUST classify it as either "[adverse]" or "[non-adverse]"
@@ -279,11 +276,10 @@ STRICT RULES:
     
     prompt = f"""{task_description}
 
-SENTENCE TO ANALYZE:
-{sentence}
+Input: {sentence}
 
 Response must be a comma-separated list of SDoH factors embedded with <LIST> and </LIST>.
 
-<LIST>"""
+"""
     
     return prompt
