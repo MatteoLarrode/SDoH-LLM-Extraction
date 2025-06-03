@@ -13,7 +13,7 @@ from utils.prompt_creation_helpers import (
 class SDoHExtractor:
     """Main class for extracting Social Determinants of Health from referral notes"""
     
-    def __init__(self, model, tokenizer, prompt_type: str = "zero_shot_detailed", level: int = 1, max_length: int = 512):
+    def __init__(self, model, tokenizer, prompt_type: str = "zero_shot_detailed", level: int = 1, max_length: int = 512, debug: bool = False):
         """
         Initialize the SDoH extractor
         
@@ -23,12 +23,14 @@ class SDoHExtractor:
             prompt_type: One of ["zero_shot_basic", "zero_shot_detailed", "five_shot_basic", "five_shot_detailed"]
             level: 1 for basic categories, 2 for adverse/non-adverse classification
             max_length: Maximum length for model generation
+            debug: Whether to include debugging information in results
         """
         self.model = model
         self.tokenizer = tokenizer
         self.prompt_type = prompt_type
         self.level = level
         self.max_length = max_length
+        self.debug = debug
         
         # Map prompt types to functions
         self.prompt_functions = {
@@ -53,7 +55,7 @@ class SDoHExtractor:
         """
         return TextPreprocessor.split_into_sentences(note)
     
-    def extract_from_sentence(self, sentence: str) -> List[str]:
+    def extract_from_sentence(self, sentence: str) -> Dict[str, Any]:
         """
         Extract SDoH factors from a single sentence
         
@@ -61,17 +63,32 @@ class SDoHExtractor:
             sentence: Single sentence to analyze
             
         Returns:
-            List of SDoH factors found
+            Dictionary with SDoH factors and debugging info (if enabled)
         """
         # Create prompt using selected prompt type
         prompt_func = self.prompt_functions[self.prompt_type]
         prompt = prompt_func(sentence, self.level)
         
         # Get response from model
-        response = self._get_model_response(prompt)
+        raw_response = self._get_model_response(prompt)
         
         # Parse response
-        return ResponseParser.parse_list_response(response)
+        factors = ResponseParser.parse_list_response(raw_response)
+        
+        # Build result
+        result = {
+            "sdoh_factors": factors
+        }
+        
+        # Add debugging info if enabled
+        if self.debug:
+            result["debug"] = {
+                "prompt": prompt,
+                "raw_response": raw_response,
+                "formatted_prompt": self._get_formatted_prompt(prompt)
+            }
+        
+        return result
     
     def extract_from_note(self, note: str) -> Dict[str, Any]:
         """
@@ -90,16 +107,31 @@ class SDoHExtractor:
             "summary": {}
         }
         
+        # Add extraction metadata
+        if self.debug:
+            results["extraction_metadata"] = {
+                "prompt_type": self.prompt_type,
+                "level": self.level,
+                "max_length": self.max_length,
+                "model_name": getattr(self.tokenizer, 'name_or_path', 'unknown'),
+                "debug_enabled": self.debug
+            }
+        
         all_factors = []
         
         for i, sentence in enumerate(sentences):
-            factors = self.extract_from_sentence(sentence)
+            extraction_result = self.extract_from_sentence(sentence)
+            factors = extraction_result["sdoh_factors"]
             
             sentence_result = {
                 "sentence_number": i + 1,
                 "sentence": sentence,
                 "sdoh_factors": factors
             }
+            
+            # Add debugging info if available
+            if self.debug and "debug" in extraction_result:
+                sentence_result["debug"] = extraction_result["debug"]
             
             results["sentences"].append(sentence_result)
             
@@ -111,6 +143,19 @@ class SDoHExtractor:
         results["summary"] = self._create_summary(all_factors)
         
         return results
+    
+    def _get_formatted_prompt(self, prompt: str) -> str:
+        """Get the formatted prompt that would be sent to the model"""
+        if "llama" in self.tokenizer.name_or_path.lower():
+            return self._format_llama_prompt(prompt)
+        elif "qwen" in self.tokenizer.name_or_path.lower():
+            return self._format_qwen_prompt(prompt)
+        elif "phi" in self.tokenizer.name_or_path.lower():
+            return self._format_phi_prompt(prompt)
+        elif "mistral" in self.tokenizer.name_or_path.lower():
+            return self._format_mistral_prompt(prompt)
+        else:
+            return prompt
     
     def _get_model_response(self, prompt: str) -> str:
         """
@@ -298,7 +343,7 @@ class ResponseParser:
         return factors if factors else ["NoSDoH"]
 
 # Convenience functions for quick usage
-def extract_sdoh_from_note(note: str, model, tokenizer, prompt_type: str = "zero_shot_detailed", level: int = 1) -> Dict[str, Any]:
+def extract_sdoh_from_note(note: str, model, tokenizer, prompt_type: str = "zero_shot_detailed", level: int = 1, debug: bool = False) -> Dict[str, Any]:
     """
     Convenience function to extract SDoH from a note
     
@@ -308,15 +353,16 @@ def extract_sdoh_from_note(note: str, model, tokenizer, prompt_type: str = "zero
         tokenizer: Loaded transformers tokenizer
         prompt_type: Type of prompt to use
         level: 1 or 2 for classification level
+        debug: Whether to include debugging information
         
     Returns:
         Dictionary with extraction results
     """
-    extractor = SDoHExtractor(model, tokenizer, prompt_type, level)
+    extractor = SDoHExtractor(model, tokenizer, prompt_type, level, debug=debug)
     return extractor.extract_from_note(note)
 
 
-def extract_sdoh_from_sentence(sentence: str, model, tokenizer, prompt_type: str = "zero_shot_detailed", level: int = 1) -> List[str]:
+def extract_sdoh_from_sentence(sentence: str, model, tokenizer, prompt_type: str = "zero_shot_detailed", level: int = 1, debug: bool = False) -> Dict[str, Any]:
     """
     Convenience function to extract SDoH from a single sentence
     
@@ -326,9 +372,10 @@ def extract_sdoh_from_sentence(sentence: str, model, tokenizer, prompt_type: str
         tokenizer: Loaded transformers tokenizer
         prompt_type: Type of prompt to use
         level: 1 or 2 for classification level
+        debug: Whether to include debugging information
         
     Returns:
-        List of SDoH factors
+        Dictionary with SDoH factors and debugging info (if enabled)
     """
-    extractor = SDoHExtractor(model, tokenizer, prompt_type, level)
+    extractor = SDoHExtractor(model, tokenizer, prompt_type, level, debug=debug)
     return extractor.extract_from_sentence(sentence)
