@@ -27,6 +27,8 @@ dependencies:
   - pip
   - pip:
     - sentence-transformers
+    - sentencepiece
+    - protobuf=3.20.0
     - seqeval
     - plotly
     - wandb
