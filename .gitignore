@@ -1,3 +1,15 @@
+# Data files (confidential)
+data
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Results (contains confidential information)
+results
+
+streamlit_components/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -29,13 +41,6 @@ ENV/
 
 # Jupyter Notebook
 .ipynb_checkpoints
-
-# Data files (confidential)
-data
-data/raw/*
-data/processed/*
-!data/raw/.gitkeep
-!data/processed/.gitkeep
 
 # Model files
 models/trained/*

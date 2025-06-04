@@ -7,6 +7,7 @@ from typing import List, Dict, Any, Optional, Tuple
 from pathlib import Path
 import uuid
 
+
 class BatchProcessor:
     """Handles batch processing of referral notes for SDoH extraction"""
     
@@ -260,13 +261,17 @@ class ResultsAnalyzer:
         for (model, prompt_type, level), group in comparison_df.groupby(['model_name', 'prompt_type', 'level']):
             key = f"{model}_{prompt_type}_level{level}"
             
+            # Convert pandas series to regular Python types
+            most_common_factors = group[group['has_sdoh']]['sdoh_factors'].explode().value_counts().head(10)
+            most_common_dict = {str(k): int(v) for k, v in most_common_factors.to_dict().items()}
+            
             analysis[key] = {
-                "total_sentences": len(group),
-                "sentences_with_sdoh": group['has_sdoh'].sum(),
-                "sdoh_detection_rate": group['has_sdoh'].mean(),
-                "avg_factors_per_sentence": group['factors_count'].mean(),
-                "unique_factors": len(set([f for factors in group['sdoh_factors'] for f in factors if f != "NoSDoH"])),
-                "most_common_factors": group[group['has_sdoh']]['sdoh_factors'].explode().value_counts().head(10).to_dict()
+                "total_sentences": int(len(group)),
+                "sentences_with_sdoh": int(group['has_sdoh'].sum()),
+                "sdoh_detection_rate": float(group['has_sdoh'].mean()),
+                "avg_factors_per_sentence": float(group['factors_count'].mean()),
+                "unique_factors": int(len(set([f for factors in group['sdoh_factors'] for f in factors if f != "NoSDoH"]))),
+                "most_common_factors": most_common_dict
             }
         
         return analysis

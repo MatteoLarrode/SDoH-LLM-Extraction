@@ -24,6 +24,7 @@ dependencies:
   - tokenizers
   - pyyaml
   - tqdm
+  - streamlit
   - pip
   - pip:
     - sentence-transformers

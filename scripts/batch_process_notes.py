@@ -43,7 +43,7 @@ def load_data(data_path: str) -> pd.DataFrame:
         print(f"Loaded {len(df)} records")
         
         # Check if the expected column exists
-        expected_col = "**Referral Notes (depersonalised)"
+        expected_col = "Referral Notes (depersonalised)"
         if expected_col not in df.columns:
             print(f"Warning: Column '{expected_col}' not found.")
             print(f"Available columns: {list(df.columns)}")
@@ -70,7 +70,7 @@ def main():
                        help="Classification level (1 or 2)")
     
     # Data arguments
-    parser.add_argument("--data_path", type=str, default="data/brc_referrals_cleaned.csv",
+    parser.add_argument("--data_path", type=str, default="data/processed/BRC_referrals_cleaned.csv",
                        help="Path to the referral notes CSV file")
     parser.add_argument("--batch_size", type=int, default=10,
                        help="Number of notes to process")
@@ -80,7 +80,7 @@ def main():
     # Processing arguments
     parser.add_argument("--debug", action="store_true",
                        help="Enable debug mode (includes prompts and raw responses)")
-    parser.add_argument("--output_dir", type=str, default="batch_results",
+    parser.add_argument("--output_dir", type=str, default="results/batch_results",
                        help="Directory to save results")
     parser.add_argument("--device", type=str, default="auto",
                        help="Device to use (handled automatically by model_helpers)")
