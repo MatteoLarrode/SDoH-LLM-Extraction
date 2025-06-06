@@ -1,4 +1,5 @@
 import re
+import pandas as pd
 import json
 import torch
 from typing import List, Dict, Any, Optional, Tuple
@@ -147,6 +148,35 @@ class SDoHExtractor:
         
         return results
     
+    def results_to_dataframe(self, results: Dict[str, Any], note_id: str = None) -> pd.DataFrame:
+        """
+        Convert extraction results to a pandas DataFrame (one row per sentence)
+        
+        Args:
+            results: Output from extract_from_note()
+            note_id: Optional identifier for the note
+            
+        Returns:
+            DataFrame with one row per sentence
+        """
+        rows = []
+        
+        for sentence_data in results["sentences"]:
+            factors = sentence_data["sdoh_factors"]
+            
+            # Create single row per sentence
+            row = {
+                "note_id": note_id,
+                "sentence_number": sentence_data["sentence_number"],
+                "sentence": sentence_data["sentence"],
+                "has_sdoh": factors != ["NoSDoH"] and bool(factors),
+                "sdoh_factors": ", ".join(factors) if factors else "NoSDoH",
+                "num_sdoh_factors": len(factors) if factors != ["NoSDoH"] else 0
+            }
+            rows.append(row)
+        
+        return pd.DataFrame(rows)
+    
     # def _get_formatted_prompt(self, prompt: str) -> str:
     #     """Get the formatted prompt that would be sent to the model"""
     #     if "llama" in self.tokenizer.name_or_path.lower():
@@ -268,41 +298,3 @@ class SDoHExtractor:
             "factor_counts": factor_counts,
             "total_mentions": len(all_factors)
         }
-
-# Convenience functions for quick usage
-def extract_sdoh_from_note(note: str, model, tokenizer, prompt_type: str = "zero_shot_detailed", level: int = 1, debug: bool = False) -> Dict[str, Any]:
-    """
-    Convenience function to extract SDoH from a note
-    
-    Args:
-        note: Referral note text
-        model: Loaded transformers model
-        tokenizer: Loaded transformers tokenizer
-        prompt_type: Type of prompt to use
-        level: 1 or 2 for classification level
-        debug: Whether to include debugging information
-        
-    Returns:
-        Dictionary with extraction results
-    """
-    extractor = SDoHExtractor(model, tokenizer, prompt_type, level, debug=debug)
-    return extractor.extract_from_note(note)
-
-
-def extract_sdoh_from_sentence(sentence: str, model, tokenizer, prompt_type: str = "zero_shot_detailed", level: int = 1, debug: bool = False) -> Dict[str, Any]:
-    """
-    Convenience function to extract SDoH from a single sentence
-    
-    Args:
-        sentence: Single sentence to analyze
-        model: Loaded transformers model
-        tokenizer: Loaded transformers tokenizer
-        prompt_type: Type of prompt to use
-        level: 1 or 2 for classification level
-        debug: Whether to include debugging information
-        
-    Returns:
-        Dictionary with SDoH factors and debugging info (if enabled)
-    """
-    extractor = SDoHExtractor(model, tokenizer, prompt_type, level, debug=debug)
-    return extractor.extract_from_sentence(sentence)
