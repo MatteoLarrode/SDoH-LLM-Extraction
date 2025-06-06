@@ -3,8 +3,8 @@
 Batch processing script for SDoH extraction from referral notes
 
 Usage:
-    python batch_process_notes.py --model_name "microsoft/Phi-3-mini-4k-instruct" \
-                                 --prompt_type "zero_shot_detailed" \
+    python batch_process_notes.py --model_name "meta-llama/Llama-3.1-8B-Instruct" \
+                                 --prompt_type "five_shot_basic" \
                                  --level 1 \
                                  --batch_size 10 \
                                  --start_index 0 \
@@ -21,8 +21,8 @@ import json
 # Add the project root to the path so we can import our modules
 sys.path.append('.')
 
-from utils.classification_helpers import SDoHExtractor
-from utils.batch_processing_helpers import BatchProcessor, ResultsAnalyzer
+from utils.SDoH_classification_helpers import SDoHExtractor
+from utils.batch_processing_helpers import BatchProcessor
 from utils.model_helpers import load_instruction_model
 
 
