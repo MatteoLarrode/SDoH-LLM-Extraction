@@ -4,6 +4,7 @@
 import pandas as pd
 import numpy as np
 import re
+from typing import List
 
 def clean_na_variations(text):
         """Remove various NA representations and normalize text"""
@@ -33,24 +34,6 @@ def clean_na_variations(text):
                 return np.nan
         
         return text
-
-def split_into_sentences(text):
-        """Split text into sentences and initial cleaning"""
-        if pd.isna(text):
-            return []
-        
-        # Basic sentence splitting (you might want to use more sophisticated NLP tools)
-        sentences = re.split(r'[.!?]+', str(text))
-        
-        # Clean and filter sentences
-        cleaned_sentences = []
-        for sentence in sentences:
-            sentence = sentence.strip()
-            # Remove very short sentences (likely not meaningful)
-            if len(sentence) > 5:
-                cleaned_sentences.append(sentence)
-        
-        return cleaned_sentences
 
 def remove_duplicate_sentences_per_case(df):
         """
@@ -113,3 +96,39 @@ def remove_duplicate_sentences_per_case(df):
             return result_df.reset_index(drop=True)
         else:
             return pd.DataFrame()
+
+def clean_text(text: str) -> str:
+        """Basic text cleaning"""
+        # Remove extra whitespace
+        text = re.sub(r'\s+', ' ', text.strip())
+        
+        # Handle anonymization markers
+        text = re.sub(r'\bXXXX\b', '[REDACTED]', text)
+        text = re.sub(r'\bPERSON\b', '[PERSON]', text)
+        
+        return text
+
+def split_into_sentences(text: str) -> List[str]:
+        """
+        Split text into sentences with basic cleaning
+        
+        Args:
+            text: Input text
+            
+        Returns:
+            List of cleaned sentences
+        """
+        # Basic sentence splitting
+        sentences = re.split(r'[.!?]+', text)
+        
+        # Clean and filter sentences
+        cleaned_sentences = []
+        for sentence in sentences:
+            # Remove extra whitespace and anonymization markers
+            cleaned = clean_text(sentence)
+            
+            # Skip very short sentences (likely fragments)
+            if len(cleaned.split()) > 2:
+                cleaned_sentences.append(cleaned)
+        
+        return cleaned_sentences

@@ -9,6 +9,9 @@ from utils.prompt_creation_helpers import (
     create_five_shot_basic_prompt,
     create_five_shot_detailed_prompt
 )
+from utils.data_cleaning_helpers import (
+    split_into_sentences
+)
 
 class SDoHExtractor:
     """Main class for extracting Social Determinants of Health from referral notes"""
@@ -53,7 +56,7 @@ class SDoHExtractor:
         Returns:
             List of cleaned sentences
         """
-        return TextPreprocessor.split_into_sentences(note)
+        return split_into_sentences(note)
     
     def extract_from_sentence(self, sentence: str) -> Dict[str, Any]:
         """
@@ -73,7 +76,7 @@ class SDoHExtractor:
         raw_response = self._get_model_response(prompt)
         
         # Parse response
-        factors = ResponseParser.parse_list_response(raw_response)
+        factors = self._parse_list_response(raw_response)
         
         # Build result
         result = {
@@ -85,7 +88,7 @@ class SDoHExtractor:
             result["debug"] = {
                 "prompt": prompt,
                 "raw_response": raw_response,
-                "formatted_prompt": self._get_formatted_prompt(prompt)
+                # "formatted_prompt": self._get_formatted_prompt(prompt)
             }
         
         return result
@@ -144,18 +147,18 @@ class SDoHExtractor:
         
         return results
     
-    def _get_formatted_prompt(self, prompt: str) -> str:
-        """Get the formatted prompt that would be sent to the model"""
-        if "llama" in self.tokenizer.name_or_path.lower():
-            return self._format_llama_prompt(prompt)
-        elif "qwen" in self.tokenizer.name_or_path.lower():
-            return self._format_qwen_prompt(prompt)
-        elif "phi" in self.tokenizer.name_or_path.lower():
-            return self._format_phi_prompt(prompt)
-        elif "mistral" in self.tokenizer.name_or_path.lower():
-            return self._format_mistral_prompt(prompt)
-        else:
-            return prompt
+    # def _get_formatted_prompt(self, prompt: str) -> str:
+    #     """Get the formatted prompt that would be sent to the model"""
+    #     if "llama" in self.tokenizer.name_or_path.lower():
+    #         return self._format_llama_prompt(prompt)
+    #     elif "qwen" in self.tokenizer.name_or_path.lower():
+    #         return self._format_qwen_prompt(prompt)
+    #     elif "phi" in self.tokenizer.name_or_path.lower():
+    #         return self._format_phi_prompt(prompt)
+    #     elif "mistral" in self.tokenizer.name_or_path.lower():
+    #         return self._format_mistral_prompt(prompt)
+    #     else:
+    #         return prompt
     
     def _get_model_response(self, prompt: str) -> str:
         """
@@ -169,17 +172,17 @@ class SDoHExtractor:
         """
         try:
             # Format prompt for instruction-tuned models
-            if "llama" in self.tokenizer.name_or_path.lower():
-                formatted_prompt = self._format_llama_prompt(prompt)
-            elif "qwen" in self.tokenizer.name_or_path.lower():
-                formatted_prompt = self._format_qwen_prompt(prompt)
-            elif "phi" in self.tokenizer.name_or_path.lower():
-                formatted_prompt = self._format_phi_prompt(prompt)
-            elif "mistral" in self.tokenizer.name_or_path.lower():
-                formatted_prompt = self._format_mistral_prompt(prompt)
-            else:
+            # if "llama" in self.tokenizer.name_or_path.lower():
+            #     formatted_prompt = self._format_llama_prompt(prompt)
+            # elif "qwen" in self.tokenizer.name_or_path.lower():
+            #     formatted_prompt = self._format_qwen_prompt(prompt)
+            # elif "phi" in self.tokenizer.name_or_path.lower():
+            #     formatted_prompt = self._format_phi_prompt(prompt)
+            # elif "mistral" in self.tokenizer.name_or_path.lower():
+            #     formatted_prompt = self._format_mistral_prompt(prompt)
+            # else:
                 # Generic format
-                formatted_prompt = prompt
+            formatted_prompt = prompt
             
             # Tokenize input
             inputs = self.tokenizer(
@@ -197,14 +200,15 @@ class SDoHExtractor:
             with torch.no_grad():
                 outputs = self.model.generate(
                     **inputs,
+                    tokenizer=self.tokenizer,
                     max_new_tokens=150,      # Increased for longer responses
                     do_sample=True,          # Enable sampling for better variety
-                    temperature=0.3,         # Low temperature for consistency
+                    temperature=0.2,         # Low temperature for consistency
                     top_p=0.9,              # Nucleus sampling
                     pad_token_id=self.tokenizer.eos_token_id,
                     eos_token_id=self.tokenizer.eos_token_id,
                     repetition_penalty=1.1,  # Prevent repetition
-                    #stop_strings=["</LIST>", "\n\n"],  # Stop at end of list or double newline
+                    stop_strings=["</LIST>", "\n\n"],  # Stop at end of list or double newline
                 )
             
             # Decode response
@@ -218,99 +222,8 @@ class SDoHExtractor:
         except Exception as e:
             print(f"Error generating response: {e}")
             return "NoSDoH"
-    
-    def _format_llama_prompt(self, prompt: str) -> str:
-        """Format prompt for Llama models"""
-        return f"""<|begin_of_text|><|start_header_id|>user<|end_header_id|>
-
-{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
-
-"""
-    
-    def _format_qwen_prompt(self, prompt: str) -> str:
-        """Format prompt for Qwen models"""
-        return f"""<|im_start|>user
-{prompt}<|im_end|>
-<|im_start|>assistant
-"""
-    
-    def _format_phi_prompt(self, prompt: str) -> str:
-        """Format prompt for Phi models"""
-        return f"""<|user|>
-{prompt}<|end|>
-<|assistant|>
-"""
-    
-    def _format_mistral_prompt(self, prompt: str) -> str:
-        """Format prompt for Mistral models"""
-        return f"""<s>[INST] {prompt} [/INST]"""
-    
-    def _create_summary(self, all_factors: List[str]) -> Dict[str, Any]:
-        """Create summary of all SDoH factors found"""
-        if not all_factors:
-            return {"unique_factors": [], "factor_counts": {}, "total_mentions": 0}
         
-        # Count occurrences
-        factor_counts = {}
-        for factor in all_factors:
-            factor_counts[factor] = factor_counts.get(factor, 0) + 1
-        
-        return {
-            "unique_factors": list(set(all_factors)),
-            "factor_counts": factor_counts,
-            "total_mentions": len(all_factors)
-        }
-
-
-class TextPreprocessor:
-    """Handles text preprocessing tasks"""
-    
-    @staticmethod
-    def split_into_sentences(text: str) -> List[str]:
-        """
-        Split text into sentences with basic cleaning
-        
-        Args:
-            text: Input text
-            
-        Returns:
-            List of cleaned sentences
-        """
-        # Basic sentence splitting
-        sentences = re.split(r'[.!?]+', text)
-        
-        # Clean and filter sentences
-        cleaned_sentences = []
-        for sentence in sentences:
-            # Remove extra whitespace and anonymization markers
-            cleaned = re.sub(r'\s+', ' ', sentence.strip())
-            cleaned = re.sub(r'\bXXXX\b', '[REDACTED]', cleaned)
-            cleaned = re.sub(r'\bPERSON\b', '[PERSON]', cleaned)
-            
-            # Skip very short sentences (likely fragments)
-            if len(cleaned.split()) > 2:
-                cleaned_sentences.append(cleaned)
-        
-        return cleaned_sentences
-    
-    @staticmethod
-    def clean_text(text: str) -> str:
-        """Basic text cleaning"""
-        # Remove extra whitespace
-        text = re.sub(r'\s+', ' ', text.strip())
-        
-        # Handle anonymization markers
-        text = re.sub(r'\bXXXX\b', '[REDACTED]', text)
-        text = re.sub(r'\bPERSON\b', '[PERSON]', text)
-        
-        return text
-
-
-class ResponseParser:
-    """Handles parsing of model responses"""
-    
-    @staticmethod
-    def parse_list_response(response: str) -> List[str]:
+    def _parse_list_response(self, response: str) -> List[str]:
         """
         Parse the <LIST></LIST> format response
         
@@ -334,13 +247,27 @@ class ResponseParser:
         if not list_content or list_content.lower() == "nosdoh":
             return ["NoSDoH"]
         
-
-        
         # Split by comma and clean
         factors = [factor.strip() for factor in list_content.split(',')]
         factors = [factor for factor in factors if factor]  # Remove empty strings
         
         return factors if factors else ["NoSDoH"]
+    
+    def _create_summary(self, all_factors: List[str]) -> Dict[str, Any]:
+        """Create summary of all SDoH factors found"""
+        if not all_factors:
+            return {"unique_factors": [], "factor_counts": {}, "total_mentions": 0}
+        
+        # Count occurrences
+        factor_counts = {}
+        for factor in all_factors:
+            factor_counts[factor] = factor_counts.get(factor, 0) + 1
+        
+        return {
+            "unique_factors": list(set(all_factors)),
+            "factor_counts": factor_counts,
+            "total_mentions": len(all_factors)
+        }
 
 # Convenience functions for quick usage
 def extract_sdoh_from_note(note: str, model, tokenizer, prompt_type: str = "zero_shot_detailed", level: int = 1, debug: bool = False) -> Dict[str, Any]:

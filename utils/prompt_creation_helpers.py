@@ -10,43 +10,37 @@ def create_zero_shot_basic_prompt(sentence: str, level: int = 1) -> str:
         task_description = """
 You are analyzing a referral note sentence to identify mentions of Social Determinants of Health (SDoH).
 
-Identify if the sentence mentions ANY of these categories:
-Employment status, Housing issues, Transportation issues, Parental status, Relationship status, Social support, Substance use, Financial issues, Education level, Food insecurity
+Given a sentence, output all SDoH factors that can be inferred from that sentence from the following list: 
+EmploymentStatus, Housing, Transportation, ParentalStatus, RelationshipStatus, SocialSupport, SubstanceUse, FinancialSituation, EducationLevel, FoodInsecurity. If the sentence does NOT mention any of the above categories, output - NoSDoH.
 
-If the sentence does NOT mention any of the above categories, return: "NoSDoH"
+Your response must be a comma-separated list of SDoH factors embedded with <LIST> and </LIST>.
 
-STRICT RULES: 
-- You MUST only use the exact categories listed above OR "NoSDoH"
-- DO NOT add explanations or notes
-- Return ONLY the list format specified below
+**STRICT RULES**: 
+- DO NOT generate any other text, explanations, or new SDoH labels.
+- A sentence CAN be labeled with one or more SDoH factors.
 """
         
     else:  # level 2
         task_description = """
-You are analyzing a referral note sentence to identify Social Determinants of Health and classify them as adverse or non-adverse.
+You are analyzing a referral note sentence to identify Social Determinants of Health, and classify them as Adverse or Protective.
 
-Identify if the sentence mentions ANY of these categories and classify each as ADVERSE or NON-ADVERSE:
-Employment status, Housing issues, Transportation issues, Parental status, Relationship status, Social support, Substance use, Financial issues, Education level, Food insecurity
+Given a sentence, output all SDoH factors that can be inferred from that sentence from the following list: 
+EmploymentStatus, Housing, Transportation, ParentalStatus, RelationshipStatus, SocialSupport, SubstanceUse, FinancialSituation, EducationLevel, FoodInsecurity. If the sentence does NOT mention any of the above categories, output - NoSDoH.
 
-If the sentence does NOT mention any of the above categories, return: "NoSDoH"
+Your response must be a comma-separated list of SDoH factors embedded with <LIST> and </LIST>.
 
-STRICT RULES:
-- For EVERY SDoH mention found, you MUST classify it as either "[adverse]" or "[non-adverse]"
-- You MUST only use the exact categories listed above OR "NoSDoH"
-- DO NOT add explanations or notes
-- Return ONLY the list format specified below
+**STRICT RULES**:
+- For EVERY SDoH mention found, you MUST classify it as either "Adverse" or "Protective" after a hyphen
+- DO NOT generate any other text, explanations, or new SDoH labels.
+- A sentence CAN be labeled with one or more SDoH factors.
 """
     
     prompt = f"""{task_description}
 
 Input: {sentence}
-
-Response must be a comma-separated list of SDoH factors embedded with <LIST> and </LIST>.
-
 """
     
     return prompt
-
 
 def create_zero_shot_detailed_prompt(sentence: str, level: int = 1) -> str:
     """Zero-shot prompt with detailed category descriptions"""
@@ -55,62 +49,81 @@ def create_zero_shot_detailed_prompt(sentence: str, level: int = 1) -> str:
         task_description = """
 You are analyzing a referral note sentence to identify mentions of Social Determinants of Health (SDoH).
 
-For the sentence below, identify if it mentions ANY of these 10 categories:
-1. Employment status - any mention of work, job, career, employment situation
-2. Housing issues - any mention of housing, living situation, accommodation
-3. Transportation issues - any mention of transportation, travel, getting around
-4. Parental status - any mention of children, parenting, being a parent
-5. Relationship status - any mention of marital status, partnerships, relationships
-6. Social support - any mention of help from others, family support, social connections
-7. Substance use - any mention of alcohol, drugs, smoking, tobacco use
-8. Financial issues - any mention of money problems, income, financial struggles, benefits
-9. Education level - any mention of schooling, education, qualifications, literacy
-10. Food insecurity - any mention of food access, hunger, food assistance, nutrition problems
+Given a sentence, output all SDoH factors that can be inferred from that sentence from the following list: 
+EmploymentStatus, Housing, Transportation, ParentalStatus, RelationshipStatus, SocialSupport, SubstanceUse, FinancialSituation, EducationLevel, FoodInsecurity. If the sentence does NOT mention any of the above categories, output - NoSDoH.
 
-If the sentence does NOT mention any of the above categories, return: "NoSDoH"
+Your response must be a comma-separated list of SDoH factors embedded with <LIST> and </LIST>.
 
-STRICT RULES: 
-- You MUST only use the exact categories listed above OR "NoSDoH"
-- DO NOT add explanations or notes
-- Return ONLY the list format specified below
+**STRICT RULES**: 
+- DO NOT generate any other text, explanations, or new SDoH labels.
+- A sentence CAN be labeled with one or more SDoH factors.
+
+Below are some guidelines:
+
+Employment status: Annotate sentences that describe a person's work situation, including current employment, unemployment, retirement status, or disability affecting work capacity.
+
+Housing: Annotate sentences that describe housing conditions, stability, or problems including homelessness, temporary housing, housing quality, overcrowding, unsafe living conditions, housing affordability, eviction risk, or housing-related health hazards.
+
+Transportation: Annotate sentences that describe difficulties accessing transportation, lack of reliable transportation, inability to travel for medical appointments, public transit limitations, vehicle problems, or mobility barriers that affect daily activities or healthcare access.
+
+Parental status: Annotate sentences that indicate whether the person has children, has parental responsibilities, custody arrangements, child-rearing challenges, or family composition including dependents.
+
+Relationship status: Annotate sentences that describe marital status (married, divorced, widowed, separated), partnership status (single, dating, cohabiting).
+
+Social support: Annotate sentences that describe availability or absence of help from family, friends, or community including emotional support, practical assistance, social connections, isolation, loneliness.
+
+Substance use: Annotate sentences that mention current or past use of alcohol, illegal drugs, prescription drug misuse, tobacco products, smoking cessation attempts, substance abuse treatment, or substance-related health problems.
+
+Financial Situation: Annotate sentences that describe economic hardship, income adequacy, debt problems, inability to afford necessities, or financial stress.
+
+Education level: Annotate sentences that mention highest level of education completed, literacy skills, educational barriers, special education needs.
+
+Food insecurity: Annotate sentences that describe inadequate food access, hunger, reliance on food assistance programs, poor nutrition due to cost, skipping meals, food scarcity, or difficulty obtaining healthy foods.
 """
         
     else:  # level 2
         task_description = """
-You are analyzing a referral note sentence to identify Social Determinants of Health and classify them as adverse or non-adverse.
+You are analyzing a referral note sentence to identify Social Determinants of Health, and classify them as Adverse or Protective.
 
-For the sentence below, identify if it mentions ANY of these 10 categories and classify each as ADVERSE or NON-ADVERSE:
+Given a sentence, output all SDoH factors that can be inferred from that sentence from the following list: 
+EmploymentStatus, Housing, Transportation, ParentalStatus, RelationshipStatus, SocialSupport, SubstanceUse, FinancialSituation, EducationLevel, FoodInsecurity. If the sentence does NOT mention any of the above categories, output - NoSDoH.
 
-1. Employment status - unemployed, underemployed, work disability, job loss, unstable employment
-2. Housing issues - homelessness, housing insecurity, poor conditions, affordability problems, overcrowding
-3. Transportation issues - lack of transportation, distance barriers, mobility problems, transport costs
-4. Parental status - having children under 18 years old requiring care, single parenting challenges
-5. Relationship status - widowed, divorced, single, separated (relationship loss/absence)
-6. Social support - isolation, lack of support, being alone, no help available, family conflict
-7. Substance use - alcohol abuse, drug use, smoking addiction, substance dependency
-8. Financial issues - poverty, debt, inability to pay bills, benefit dependency, financial stress
-9. Education level - low education, illiteracy, lack of qualifications, educational barriers
-10. Food insecurity - hunger, inability to afford food, reliance on food banks, poor nutrition
+Your response must be a comma-separated list of SDoH factors embedded with <LIST> and </LIST>.
 
-If the sentence does NOT mention any of the above categories, return: "NoSDoH"
+**STRICT RULES**:
+- For EVERY SDoH mention found, you MUST classify it as either "Adverse" or "Protective" after a hyphen
+- DO NOT generate any other text, explanations, or new SDoH labels.
+- A sentence CAN be labeled with one or more SDoH factors.
 
-STRICT RULES:
-- For EVERY SDoH mention found, you MUST classify it as either "[adverse]" or "[non-adverse]"
-- You MUST only use the exact categories listed above OR "NoSDoH"
-- DO NOT add explanations or notes
-- Return ONLY the list format specified below
+Below are some guidelines and examples to follow:
+
+Employment status: Annotate sentences that describe a person's work situation, including current employment, unemployment, retirement status, or disability affecting work capacity.
+
+Housing issues: Annotate sentences that describe housing conditions, stability, or problems including homelessness, temporary housing, housing quality, overcrowding, unsafe living conditions, housing affordability, eviction risk, or housing-related health hazards.
+
+Transportation issues: Annotate sentences that describe difficulties accessing transportation, lack of reliable transportation, inability to travel for medical appointments, public transit limitations, vehicle problems, or mobility barriers that affect daily activities or healthcare access.
+
+Parental status: Annotate sentences that indicate whether the person has children, has parental responsibilities, custody arrangements, child-rearing challenges, or family composition including dependents.
+
+Relationship status: Annotate sentences that describe marital status (married, divorced, widowed, separated), partnership status (single, dating, cohabiting).
+
+Social support: Annotate sentences that describe availability or absence of help from family, friends, or community including emotional support, practical assistance, social connections, isolation, loneliness.
+
+Substance use: Annotate sentences that mention current or past use of alcohol, illegal drugs, prescription drug misuse, tobacco products, smoking cessation attempts, substance abuse treatment, or substance-related health problems.
+
+Financial issues: Annotate sentences that describe economic hardship, income adequacy, debt problems, inability to afford necessities, or financial stress.
+
+Education level: Annotate sentences that mention highest level of education completed, literacy skills, educational barriers, special education needs.
+
+Food insecurity: Annotate sentences that describe inadequate food access, hunger, reliance on food assistance programs, poor nutrition due to cost, skipping meals, food scarcity, or difficulty obtaining healthy foods.
 """
     
     prompt = f"""{task_description}
 
 Input: {sentence}
-
-Response must be a comma-separated list of SDoH factors embedded with <LIST> and </LIST>.
-
 """
     
     return prompt
-
 
 def create_five_shot_basic_prompt(sentence: str, level: int = 1) -> str:
     """5-shot prompt with category list and examples, no detailed descriptions"""
@@ -119,75 +132,70 @@ def create_five_shot_basic_prompt(sentence: str, level: int = 1) -> str:
         task_description = """
 You are analyzing a referral note sentence to identify mentions of Social Determinants of Health (SDoH).
 
-Identify if the sentence mentions ANY of these categories:
-Employment status, Housing issues, Transportation issues, Parental status, Relationship status, Social support, Substance use, Financial issues, Education level, Food insecurity
+Given a sentence, output all SDoH factors that can be inferred from that sentence from the following list: 
+EmploymentStatus, Housing, Transportation, ParentalStatus, RelationshipStatus, SocialSupport, SubstanceUse, FinancialSituation, EducationLevel, FoodInsecurity. If the sentence does NOT mention any of the above categories, output - NoSDoH.
 
-If the sentence does NOT mention any of the above categories, return: "NoSDoH"
+Your response must be a comma-separated list of SDoH factors embedded with <LIST> and </LIST>.
+
+**STRICT RULES**: 
+- DO NOT generate any other text, explanations, or new SDoH labels.
+- A sentence CAN be labeled with one or more SDoH factors.
 
 EXAMPLES:
-Example 1: Input: "John is unemployed and lives with his elderly mother."
-Output: <LIST>Employment status, Relationship status</LIST>
+Example 1: Input: "Person is unemployed and lives with his elderly mother."
+Output: <LIST>EmploymentStatus</LIST>
 
 Example 2: Input: "She struggles to afford groceries and has no car to get to the store."
-Output: <LIST>Financial issues, Transportation issues, Food insecurity</LIST>
+Output: <LIST>FinancialSituation, Transportation, FoodInsecurity</LIST>
 
-Example 3: Input: "The patient smokes cigarettes and drinks alcohol daily."
-Output: <LIST>Substance use</LIST>
+Example 3: Input: "Person smokes cigarettes and drinks alcohol daily."
+Output: <LIST>SubstanceUse</LIST>
 
 Example 4: Input: "He has three young children at home and receives help from his sister."
-Output: <LIST>Parental status, Social support</LIST>
+Output: <LIST>ParentalStatus, SocialSupport</LIST>
 
-Example 5: Input: "The patient was prescribed medication for diabetes."
+Example 5: Input: "Person was prescribed medication for diabetes."
 Output: <LIST>NoSDoH</LIST>
 
-STRICT RULES: 
-- You MUST only use the exact categories listed above OR "NoSDoH"
-- DO NOT add explanations or notes
-- Return ONLY the list format specified below
 """
         
     else:  # level 2
         task_description = """
-You are analyzing a referral note sentence to identify Social Determinants of Health and classify them as adverse or non-adverse.
+You are analyzing a referral note sentence to identify Social Determinants of Health, and classify them as Adverse or Protective.
 
-Identify if the sentence mentions ANY of these categories and classify each as ADVERSE or NON-ADVERSE:
-Employment status, Housing issues, Transportation issues, Parental status, Relationship status, Social support, Substance use, Financial issues, Education level, Food insecurity
+Given a sentence, output all SDoH factors that can be inferred from that sentence from the following list: 
+EmploymentStatus, Housing, Transportation, ParentalStatus, RelationshipStatus, SocialSupport, SubstanceUse, FinancialSituation, EducationLevel, FoodInsecurity. If the sentence does NOT mention any of the above categories, output - NoSDoH.
 
-If the sentence does NOT mention any of the above categories, return: "NoSDoH"
+Your response must be a comma-separated list of SDoH factors embedded with <LIST> and </LIST>.
+
+**STRICT RULES**:
+- For EVERY SDoH mention found, you MUST classify it as either "Adverse" or "Protective" after a hyphen
+- DO NOT generate any other text, explanations, or new SDoH labels.
+- A sentence CAN be labeled with one or more SDoH factors.
 
 EXAMPLES:
-Example 1: "John is unemployed and lives with his elderly mother."
-Output: <LIST>Employment status[adverse], Relationship status[non-adverse]</LIST>
+Example 1: Input: "Person is unemployed and lives with his elderly mother."
+Output: <LIST>EmploymentStatus-Adverse</LIST>
 
-Example 2: "She struggles to afford groceries and has no car to get to the store."
-Output: <LIST>Financial issues[adverse], Transportation issues[adverse], Food insecurity[adverse]</LIST>
+Example 2: Input: "She struggles to afford groceries and has no car to get to the store."
+Output: <LIST>FinancialSituation-Adverse, Transportation-Adverse, FoodInsecurity-Adverse</LIST>
 
-Example 3: "The patient smokes cigarettes and drinks alcohol daily."
-Output: <LIST>Substance use[adverse]</LIST>
+Example 3: Input: "Person smokes cigarettes and drinks alcohol daily."
+Output: <LIST>SubstanceUse-Adverse</LIST>
 
-Example 4: "He has three young children at home and receives help from his sister."
-Output: <LIST>Parental status[non-adverse], Social support[non-adverse]</LIST>
+Example 4: Input: "He has three young children at home and receives help from his sister."
+Output: <LIST>ParentalStatus-Adverse, SocialSupport-Protective</LIST>
 
-Example 5: "The patient was prescribed medication for diabetes."
+Example 5: Input: "Person was prescribed medication for diabetes."
 Output: <LIST>NoSDoH</LIST>
-
-STRICT RULES:
-- For EVERY SDoH mention found, you MUST classify it as either "[adverse]" or "[non-adverse]"
-- You MUST only use the exact categories listed above OR "NoSDoH"
-- DO NOT add explanations or notes
-- Return ONLY the list format specified below
 """
     
     prompt = f"""{task_description}
 
-Input: {sentence}
-
-Response must be a comma-separated list of SDoH factors embedded with <LIST> and </LIST>.
-
+Input: "{sentence}"
 """
     
     return prompt
-
 
 def create_five_shot_detailed_prompt(sentence: str, level: int = 1) -> str:
     """5-shot prompt with detailed category descriptions and examples"""
@@ -196,90 +204,126 @@ def create_five_shot_detailed_prompt(sentence: str, level: int = 1) -> str:
         task_description = """
 You are analyzing a referral note sentence to identify mentions of Social Determinants of Health (SDoH).
 
-For the sentence below, identify if it mentions ANY of these 10 categories:
-1. Employment status - any mention of work, job, career, employment situation
-2. Housing issues - any mention of housing, living situation, accommodation
-3. Transportation issues - any mention of transportation, travel, getting around
-4. Parental status - any mention of children, parenting, being a parent
-5. Relationship status - any mention of marital status, partnerships, relationships
-6. Social support - any mention of help from others, family support, social connections
-7. Substance use - any mention of alcohol, drugs, smoking, tobacco use
-8. Financial issues - any mention of money problems, income, financial struggles, benefits
-9. Education level - any mention of schooling, education, qualifications, literacy
-10. Food insecurity - any mention of food access, hunger, food assistance, nutrition problems
+Given a sentence, output all SDoH factors that can be inferred from that sentence from the following list: 
+EmploymentStatus, Housing, Transportation, ParentalStatus, RelationshipStatus, SocialSupport, SubstanceUse, FinancialSituation, EducationLevel, FoodInsecurity. If the sentence does NOT mention any of the above categories, output - NoSDoH.
 
-If the sentence does NOT mention any of the above categories, return: "NoSDoH"
+Your response must be a comma-separated list of SDoH factors embedded with <LIST> and </LIST>.
+
+**STRICT RULES**: 
+- DO NOT generate any other text, explanations, or new SDoH labels.
+- A sentence CAN be labeled with one or more SDoH factors.
+
+Below are some guidelines and examples to follow:
+
+Employment status: Annotate sentences that describe a person's work situation, including current employment, unemployment, retirement status, or disability affecting work capacity.
+
+Housing: Annotate sentences that describe housing conditions, stability, or problems including homelessness, temporary housing, housing quality, overcrowding, unsafe living conditions, housing affordability, eviction risk, or housing-related health hazards.
+
+Transportation: Annotate sentences that describe difficulties accessing transportation, lack of reliable transportation, inability to travel for medical appointments, public transit limitations, vehicle problems, or mobility barriers that affect daily activities or healthcare access.
+
+Parental status: Annotate sentences that indicate whether the person has children, has parental responsibilities, custody arrangements, child-rearing challenges, or family composition including dependents.
+
+Relationship status: Annotate sentences that describe marital status (married, divorced, widowed, separated), partnership status (single, dating, cohabiting).
+
+Social support: Annotate sentences that describe availability or absence of help from family, friends, or community including emotional support, practical assistance, social connections, isolation, loneliness.
+
+Substance use: Annotate sentences that mention current or past use of alcohol, illegal drugs, prescription drug misuse, tobacco products, smoking cessation attempts, substance abuse treatment, or substance-related health problems.
+
+Financial Situation: Annotate sentences that describe economic hardship, income adequacy, debt problems, inability to afford necessities, or financial stress.
+
+Education level: Annotate sentences that mention highest level of education completed, literacy skills, educational barriers, special education needs.
+
+Food insecurity: Annotate sentences that describe inadequate food access, hunger, reliance on food assistance programs, poor nutrition due to cost, skipping meals, food scarcity, or difficulty obtaining healthy foods.
 
 EXAMPLES:
-Example 1: "John is unemployed and lives with his elderly mother."
-Output: <LIST>Employment status, Relationship status</LIST>
+Example 1: Input: "Person is unemployed and lives with his elderly mother."
+Output: <LIST>EmploymentStatus</LIST>
 
-Example 2: "She struggles to afford groceries and has no car to get to the store."
-Output: <LIST>Financial issues, Transportation issues, Food insecurity</LIST>
+Example 2: Input: "She struggles to afford groceries and has no car to get to the store."
+Output: <LIST>FinancialIssues, TransportationIssues, FoodInsecurity</LIST>
 
-Example 3: "The patient smokes cigarettes and drinks alcohol daily."
-Output: <LIST>Substance use</LIST>
+Example 3: Input: "Person smokes cigarettes and drinks alcohol daily."
+Output: <LIST>SubstanceUse</LIST>
 
-Example 4: "He has three young children at home and receives help from his sister."
-Output: <LIST>Parental status, Social support</LIST>
+Example 4: Input: "He has three young children at home and receives help from his sister."
+Output: <LIST>ParentalStatus, SocialSupport</LIST>
 
-Example 5: "The patient was prescribed medication for diabetes."
+Example 5: Input: "Person was prescribed medication for diabetes."
 Output: <LIST>NoSDoH</LIST>
-
-STRICT RULES: 
-- You MUST only use the exact categories listed above OR "NoSDoH"
-- DO NOT add explanations or notes
-- Return ONLY the list format specified below
 """
         
     else:  # level 2
         task_description = """
-You are analyzing a referral note sentence to identify Social Determinants of Health and classify them as adverse or non-adverse.
+You are analyzing a referral note sentence to identify Social Determinants of Health, and classify them as Adverse or Protective.
 
-For the sentence below, identify if it mentions ANY of these 10 categories and classify each as ADVERSE or NON-ADVERSE:
+Given a sentence, output all SDoH factors that can be inferred from that sentence from the following list: 
+EmploymentStatus, Housing, Transportation, ParentalStatus, RelationshipStatus, SocialSupport, SubstanceUse, FinancialSituation, EducationLevel, FoodInsecurity. If the sentence does NOT mention any of the above categories, output - NoSDoH.
 
-1. Employment status - unemployed, underemployed, work disability, job loss, unstable employment
-2. Housing issues - homelessness, housing insecurity, poor conditions, affordability problems, overcrowding
-3. Transportation issues - lack of transportation, distance barriers, mobility problems, transport costs
-4. Parental status - having children under 18 years old requiring care, single parenting challenges
-5. Relationship status - widowed, divorced, single, separated (relationship loss/absence)
-6. Social support - isolation, lack of support, being alone, no help available, family conflict
-7. Substance use - alcohol abuse, drug use, smoking addiction, substance dependency
-8. Financial issues - poverty, debt, inability to pay bills, benefit dependency, financial stress
-9. Education level - low education, illiteracy, lack of qualifications, educational barriers
-10. Food insecurity - hunger, inability to afford food, reliance on food banks, poor nutrition
+Your response must be a comma-separated list of SDoH factors embedded with <LIST> and </LIST>.
 
-If the sentence does NOT mention any of the above categories, return: "NoSDoH"
+**STRICT RULES**:
+- For EVERY SDoH mention found, you MUST classify it as either "Adverse" or "Protective" after a hyphen
+- DO NOT generate any other text, explanations, or new SDoH labels.
+- A sentence CAN be labeled with one or more SDoH factors.
+
+Below are some guidelines and examples to follow:
+
+Employment status: Annotate sentences that describe a person's work situation, including current employment, unemployment, retirement status, or disability affecting work capacity.
+
+Housing issues: Annotate sentences that describe housing conditions, stability, or problems including homelessness, temporary housing, housing quality, overcrowding, unsafe living conditions, housing affordability, eviction risk, or housing-related health hazards.
+
+Transportation issues: Annotate sentences that describe difficulties accessing transportation, lack of reliable transportation, inability to travel for medical appointments, public transit limitations, vehicle problems, or mobility barriers that affect daily activities or healthcare access.
+
+Parental status: Annotate sentences that indicate whether the person has children, has parental responsibilities, custody arrangements, child-rearing challenges, or family composition including dependents.
+
+Relationship status: Annotate sentences that describe marital status (married, divorced, widowed, separated), partnership status (single, dating, cohabiting).
+
+Social support: Annotate sentences that describe availability or absence of help from family, friends, or community including emotional support, practical assistance, social connections, isolation, loneliness.
+
+Substance use: Annotate sentences that mention current or past use of alcohol, illegal drugs, prescription drug misuse, tobacco products, smoking cessation attempts, substance abuse treatment, or substance-related health problems.
+
+Financial issues: Annotate sentences that describe economic hardship, income adequacy, debt problems, inability to afford necessities, or financial stress.
+
+Education level: Annotate sentences that mention highest level of education completed, literacy skills, educational barriers, special education needs.
+
+Food insecurity: Annotate sentences that describe inadequate food access, hunger, reliance on food assistance programs, poor nutrition due to cost, skipping meals, food scarcity, or difficulty obtaining healthy foods.
 
 EXAMPLES:
-Example 1: "John is unemployed and lives with his elderly mother."
-Output: <LIST>Employment status[adverse], Relationship status[non-adverse]</LIST>
+Example 1: Input: "Person is unemployed and lives with his elderly mother."
+Output: <LIST>EmploymentStatus-Adverse</LIST>
 
-Example 1: "She struggles to afford groceries and has no car to get to the store."
-Output: <LIST>Financial issues[adverse], Transportation issues[adverse], Food insecurity[adverse]</LIST>
+Example 2: Input: "She struggles to afford groceries and has no car to get to the store."
+Output: <LIST>FinancialSituation-Adverse, Transportation-Adverse, FoodInsecurity-Adverse</LIST>
 
-Example 1: "The patient smokes cigarettes and drinks alcohol daily."
-Output: <LIST>Substance use[adverse]</LIST>
+Example 3: Input: "Person smokes cigarettes and drinks alcohol daily."
+Output: <LIST>SubstanceUse-Adverse</LIST>
 
-Example 1: "He has three young children at home and receives help from his sister."
-Output: <LIST>Parental status[non-adverse], Social support[non-adverse]</LIST>
+Example 4: Input: "He has three young children at home and receives help from his sister."
+Output: <LIST>ParentalStatus-Adverse, SocialSupport-Protective</LIST>
 
-Example 1: "The patient was prescribed medication for diabetes."
+Example 5: Input: "Person was prescribed medication for diabetes."
 Output: <LIST>NoSDoH</LIST>
-
-STRICT RULES:
-- For EVERY SDoH mention found, you MUST classify it as either "[adverse]" or "[non-adverse]"
-- You MUST only use the exact categories listed above OR "NoSDoH"
-- DO NOT add explanations or notes
-- Return ONLY the list format specified below
 """
     
     prompt = f"""{task_description}
 
-Input: {sentence}
-
-Response must be a comma-separated list of SDoH factors embedded with <LIST> and </LIST>.
-
+Input: "{sentence}"
 """
     
     return prompt
+
+# def _format_llama_prompt(prompt: str) -> str:
+#     """Format prompt for Llama models"""
+#     return f"""<|begin_of_text|><|start_header_id|>user<|end_header_id|>{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
+    
+# def _format_qwen_prompt(prompt: str) -> str:
+#     """Format prompt for Qwen models"""
+#     return f"""<|im_start|>user{prompt}<|im_end|><|im_start|>assistant"""
+    
+# def _format_phi_prompt(self, prompt: str) -> str:
+#     """Format prompt for Phi models"""
+#     return f"""<|user|>{prompt}<|end|><|assistant|>"""
+    
+# def _format_mistral_prompt(self, prompt: str) -> str:
+#     """Format prompt for Mistral models"""
+#     return f"""<s>[INST] {prompt} [/INST]"""
