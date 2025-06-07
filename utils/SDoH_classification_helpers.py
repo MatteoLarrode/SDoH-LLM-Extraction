@@ -4,12 +4,7 @@ import json
 import torch
 from typing import List, Dict, Any, Optional, Tuple
 from transformers import AutoTokenizer, AutoModel, AutoModelForCausalLM
-from utils.prompt_creation_helpers import (
-    create_zero_shot_basic_prompt,
-    create_zero_shot_detailed_prompt,
-    create_five_shot_basic_prompt,
-    create_five_shot_detailed_prompt
-)
+from utils.prompt_creation_helpers import create_automated_prompt
 from utils.data_cleaning_helpers import (
     split_into_sentences
 )
@@ -36,16 +31,14 @@ class SDoHExtractor:
         self.max_length = max_length
         self.debug = debug
         
-        # Map prompt types to functions
-        self.prompt_functions = {
-            "zero_shot_basic": create_zero_shot_basic_prompt,
-            "zero_shot_detailed": create_zero_shot_detailed_prompt,
-            "five_shot_basic": create_five_shot_basic_prompt,
-            "five_shot_detailed": create_five_shot_detailed_prompt
-        }
+        # Validate prompt type
+        valid_prompt_types = ["zero_shot_basic", "zero_shot_detailed", "five_shot_basic", "five_shot_detailed"]
+        if prompt_type not in valid_prompt_types:
+            raise ValueError(f"Invalid prompt_type. Must be one of {valid_prompt_types}")
         
-        if prompt_type not in self.prompt_functions:
-            raise ValueError(f"Invalid prompt_type. Must be one of {list(self.prompt_functions.keys())}")
+        # Validate level
+        if level not in [1, 2]:
+            raise ValueError(f"Invalid level. Must be 1 or 2, got {level}")
     
     def preprocess_referral_note(self, note: str) -> List[str]:
         """
@@ -69,9 +62,13 @@ class SDoHExtractor:
         Returns:
             Dictionary with SDoH factors and debugging info (if enabled)
         """
-        # Create prompt using selected prompt type
-        prompt_func = self.prompt_functions[self.prompt_type]
-        prompt = prompt_func(sentence, self.level)
+        # Create prompt using unified automated function
+        prompt = create_automated_prompt(
+            sentence=sentence,
+            tokenizer=self.tokenizer,
+            prompt_type=self.prompt_type,
+            level=self.level
+        )
         
         # Get response from model
         raw_response = self._get_model_response(prompt)
@@ -231,14 +228,12 @@ class SDoHExtractor:
                 outputs = self.model.generate(
                     **inputs,
                     tokenizer=self.tokenizer,
-                    max_new_tokens=150,      # Increased for longer responses
-                    do_sample=True,          # Enable sampling for better variety
-                    temperature=0.2,         # Low temperature for consistency
-                    top_p=0.9,              # Nucleus sampling
+                    max_new_tokens=50,      
+                    do_sample=False,  
                     pad_token_id=self.tokenizer.eos_token_id,
                     eos_token_id=self.tokenizer.eos_token_id,
-                    repetition_penalty=1.1,  # Prevent repetition
-                    stop_strings=["</LIST>", "\n\n"],  # Stop at end of list or double newline
+                    repetition_penalty=1, 
+                    stop_strings=["</LIST>", "\n\n", "\n", "Input:", "Example"],
                 )
             
             # Decode response

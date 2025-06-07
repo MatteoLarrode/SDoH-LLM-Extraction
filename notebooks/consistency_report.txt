@@ -1,0 +1,66 @@
+============================================================
+MODEL CONSISTENCY ANALYSIS REPORT
+============================================================
+
+DATASET OVERVIEW:
+• Total sentences analysed: 350
+• Model-prompt combinations: 8
+• Models tested: ['Mistral-7B-Instruct-v0.3_five_shot_basic'
+ 'Phi-4-mini-instruct_five_shot_basic'
+ 'Qwen2.5-7B-Instruct_five_shot_basic'
+ 'Llama-3.1-8B-Instruct_five_shot_detailed'
+ 'Mistral-7B-Instruct-v0.3_five_shot_detailed'
+ 'Phi-4-mini-instruct_five_shot_detailed'
+ 'Qwen2.5-7B-Instruct_five_shot_detailed'
+ 'Llama-3.1-8B-Instruct_five_shot_basic']
+
+MODEL CONSISTENCY RANKING:
+(Consistency Score: 0=Low, 1=High)
+ 3. Qwen2.5-7B-Instruct_five_shot_basic      Score: 0.416
+ 2. Phi-4-mini-instruct_five_shot_basic      Score: 0.414
+ 8. Llama-3.1-8B-Instruct_five_shot_basic    Score: 0.396
+ 1. Mistral-7B-Instruct-v0.3_five_shot_basic Score: 0.392
+ 4. Llama-3.1-8B-Instruct_five_shot_detailed Score: 0.279
+ 5. Mistral-7B-Instruct-v0.3_five_shot_detailed Score: 0.279
+ 7. Qwen2.5-7B-Instruct_five_shot_detailed   Score: 0.279
+ 6. Phi-4-mini-instruct_five_shot_detailed   Score: 0.220
+
+SDOH DETECTION RATES:
+• Llama-3.1-8B-Instruct_five_shot_basic    50.9% (178/350 sentences)
+• Mistral-7B-Instruct-v0.3_five_shot_basic 46.0% (161/350 sentences)
+• Phi-4-mini-instruct_five_shot_detailed   44.0% (154/350 sentences)
+• Phi-4-mini-instruct_five_shot_basic      36.0% (126/350 sentences)
+• Qwen2.5-7B-Instruct_five_shot_basic      35.7% (125/350 sentences)
+• Llama-3.1-8B-Instruct_five_shot_detailed 0.0% (0/350 sentences)
+• Mistral-7B-Instruct-v0.3_five_shot_detailed 0.0% (0/350 sentences)
+• Qwen2.5-7B-Instruct_five_shot_detailed   0.0% (0/350 sentences)
+
+OVERALL AGREEMENT METRICS:
+• Average sentence agreement: 64.7%
+• Average factor agreement: 14.9%
+• Average Cohen's Kappa: 0.115
+• Kappa interpretation: Poor
+
+TOP 5 MOST DISAGREED SENTENCES:
+
+1. Disagreement Score: 0.250
+   Sentence: Needs help with shopping...
+   Predictions: Mistral-7B-Instruct-v0.3_five_shot_basic: Transportation, FoodInsecurity, Phi-4-mini-instruct_five_shot_detailed: Unemployment, Housing, FoodInsecurity, Llama-3.1-8B-Instruct_five_shot_detailed: NoSDoH, Qwen2.5-7B-Instruct_five_shot_basic: NoSDoH, Mistral-7B-Instruct-v0.3_five_shot_detailed: NoSDoH, Qwen2.5-7B-Instruct_five_shot_detailed: NoSDoH, Llama-3.1-8B-Instruct_five_shot_basic: SocialSupport, FoodInsecurity, Phi-4-mini-instruct_five_shot_basic: FoodInsecurity
+
+349. Disagreement Score: 0.250
+   Sentence: Domestic Support Lives with sister in caravan , but sister unable to support...
+   Predictions: Mistral-7B-Instruct-v0.3_five_shot_detailed: NoSDoH, Llama-3.1-8B-Instruct_five_shot_detailed: NoSDoH, Llama-3.1-8B-Instruct_five_shot_basic: Housing, SocialSupport, Phi-4-mini-instruct_five_shot_detailed: Unemployment, SocialSupport, FoodInsecurity, Housing, Phi-4-mini-instruct_five_shot_basic: Housing, SocialSupport, Qwen2.5-7B-Instruct_five_shot_detailed: NoSDoH, Qwen2.5-7B-Instruct_five_shot_basic: NoSDoH, Mistral-7B-Instruct-v0.3_five_shot_basic: Housing, SocialSupport, FinancialSituation
+
+345. Disagreement Score: 0.250
+   Sentence: She has found this now challenging and has requested some support with aiding her to be motivated an...
+   Predictions: Mistral-7B-Instruct-v0.3_five_shot_detailed: NoSDoH, Llama-3.1-8B-Instruct_five_shot_detailed: NoSDoH, Llama-3.1-8B-Instruct_five_shot_basic: Housing, SocialSupport, Phi-4-mini-instruct_five_shot_detailed: NoSDoH, Phi-4-mini-instruct_five_shot_basic: SocialSupport, Qwen2.5-7B-Instruct_five_shot_detailed: NoSDoH, Qwen2.5-7B-Instruct_five_shot_basic: SocialSupport, Mistral-7B-Instruct-v0.3_five_shot_basic: SocialSupport, Housing
+
+6. Disagreement Score: 0.250
+   Sentence: POC & Meal prep Help source MP , support for meal preparation , needs help with wash and dress at le...
+   Predictions: Mistral-7B-Instruct-v0.3_five_shot_basic: FoodInsecurity, SocialSupport, Phi-4-mini-instruct_five_shot_detailed: NoSDoH, Llama-3.1-8B-Instruct_five_shot_detailed: NoSDoH, Qwen2.5-7B-Instruct_five_shot_basic: FoodInsecurity, SocialSupport, Mistral-7B-Instruct-v0.3_five_shot_detailed: NoSDoH, Qwen2.5-7B-Instruct_five_shot_detailed: NoSDoH, Llama-3.1-8B-Instruct_five_shot_basic: Housing, SocialSupport, EmploymentStatus, Phi-4-mini-instruct_five_shot_basic: SocialSupport, EmploymentStatus, PhysicalHealthCondition
+
+247. Disagreement Score: 0.250
+   Sentence: Food parcel E12865 - [REDACTED] & Electricity Satnam...
+   Predictions: Qwen2.5-7B-Instruct_five_shot_basic: FoodInsecurity, Llama-3.1-8B-Instruct_five_shot_detailed: NoSDoH, Phi-4-mini-instruct_five_shot_basic: NoSDoH, Mistral-7B-Instruct-v0.3_five_shot_detailed: NoSDoH, Mistral-7B-Instruct-v0.3_five_shot_basic: FoodInsecurity, Llama-3.1-8B-Instruct_five_shot_basic: Housing, FinancialSituation, Qwen2.5-7B-Instruct_five_shot_detailed: NoSDoH, Phi-4-mini-instruct_five_shot_detailed: Unemployment, SocialSupport, FoodInsecurity, ParentingRole
+
+============================================================
