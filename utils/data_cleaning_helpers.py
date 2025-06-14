@@ -212,12 +212,7 @@ def clean_snap_dataset(df):
     text_columns = df.select_dtypes(include=['object']).columns
     
     for col in text_columns:
-        original_na_count = df[col].isna().sum()
         df[col] = df[col].apply(clean_na_variations)
-        new_na_count = df[col].isna().sum()
-        additional_na = new_na_count - original_na_count
-        if additional_na > 0:
-            print(f"  {col}: {additional_na:,} additional NAs identified")
     
     # STEP 1: Remove perfect duplicates
     print("\nStep 1: Removing perfect duplicates...")
@@ -230,18 +225,8 @@ def clean_snap_dataset(df):
     removed_duplicates = initial_rows - len(df_clean)
     print(f"  Removed {removed_duplicates:,} perfect duplicates")
     
-    # STEP 2: Analyze timepoint structure
-    print("\nStep 2: Analyzing timepoint structure...")
-    if 'Timepoint' in df_clean.columns:
-        timepoint_counts = df_clean['Timepoint'].value_counts().sort_index()
-        print(f"  Timepoint distribution: {dict(timepoint_counts)}")
-    
-    if 'Survey completed:' in df_clean.columns:
-        survey_timing = df_clean['Survey completed:'].value_counts()
-        print(f"  Survey timing: {dict(survey_timing)}")
-    
-    # STEP 3: Identify complete baseline-outcome pairs
-    print("\nStep 3: Identifying baseline-outcome pairs...")
+    # STEP 2: Identify valid baseline and valid post-support pairs
+    print("\nStep 2: Identifying valid baseline and valid post-support assessments...")
     
     # Group by case and check for paired data
     case_summary = []
@@ -249,37 +234,65 @@ def clean_snap_dataset(df):
         summary = {
             'case_ref': case_ref,
             'num_assessments': len(group),
-            'has_baseline': False,
-            'has_outcome': False,
-            'timepoints': group['Timepoint'].tolist() if 'Timepoint' in group.columns else [],
-            'survey_types': group['Survey completed:'].tolist() if 'Survey completed:' in group.columns else []
+            'has_valid_baseline': False,
+            'has_valid_post_support': False,
+            'has_both': False
         }
         
-        # Check for baseline (timepoint 1 or "at the start")
+        # Check for valid baseline (timepoint 1 or "at the start" with valid outcomes)
         if 'Timepoint' in group.columns:
-            summary['has_baseline'] = 1.0 in group['Timepoint'].values
-            summary['has_outcome'] = 2.0 in group['Timepoint'].values
+            baseline_rows = group[group['Timepoint'] == 1.0]
+            if len(baseline_rows) > 0 and 'Possible to record outcomes:' in group.columns:
+                valid_baseline = baseline_rows[
+                    baseline_rows['Possible to record outcomes:'].str.lower().isin(['yes', 'y'])
+                ]
+                summary['has_valid_baseline'] = len(valid_baseline) > 0
+            
+            # Check for valid post-support (timepoint 2 with valid outcomes)
+            post_support_rows = group[group['Timepoint'] == 2.0]
+            if len(post_support_rows) > 0 and 'Possible to record outcomes:' in group.columns:
+                valid_post_support = post_support_rows[
+                    post_support_rows['Possible to record outcomes:'].str.lower().isin(['yes', 'y'])
+                ]
+                summary['has_valid_post_support'] = len(valid_post_support) > 0
         elif 'Survey completed:' in group.columns:
-            summary['has_baseline'] = 'at the start of support' in group['Survey completed:'].values
-            summary['has_outcome'] = 'at the end of support' in group['Survey completed:'].values
+            # Alternative check using survey completion field
+            baseline_rows = group[group['Survey completed:'] == 'at the start of support']
+            if len(baseline_rows) > 0 and 'Possible to record outcomes:' in group.columns:
+                valid_baseline = baseline_rows[
+                    baseline_rows['Possible to record outcomes:'].str.lower().isin(['yes', 'y'])
+                ]
+                summary['has_valid_baseline'] = len(valid_baseline) > 0
+            
+            post_support_rows = group[group['Survey completed:'] == 'at the end of support']
+            if len(post_support_rows) > 0 and 'Possible to record outcomes:' in group.columns:
+                valid_post_support = post_support_rows[
+                    post_support_rows['Possible to record outcomes:'].str.lower().isin(['yes', 'y'])
+                ]
+                summary['has_valid_post_support'] = len(valid_post_support) > 0
+        
+        # Check if has both valid baseline and valid post-support
+        summary['has_both'] = summary['has_valid_baseline'] and summary['has_valid_post_support']
         
         case_summary.append(summary)
     
     case_summary_df = pd.DataFrame(case_summary)
     
     # Report on data structure
-    complete_pairs = case_summary_df['has_baseline'] & case_summary_df['has_outcome']
-    baseline_only = case_summary_df['has_baseline'] & ~case_summary_df['has_outcome']
-    outcome_only = ~case_summary_df['has_baseline'] & case_summary_df['has_outcome']
+    has_valid_baseline = case_summary_df['has_valid_baseline'].sum()
+    has_valid_post = case_summary_df['has_valid_post_support'].sum()
+    has_both = case_summary_df['has_both'].sum()
+    baseline_only = case_summary_df['has_valid_baseline'].sum() - has_both
     
-    print(f"  Complete pairs (baseline + outcome): {complete_pairs.sum():,} cases")
-    print(f"  Baseline only: {baseline_only.sum():,} cases")
-    print(f"  Outcome only: {outcome_only.sum():,} cases")
+    print(f"  Cases with valid baseline: {has_valid_baseline:,}")
+    print(f"  Cases with valid post-support: {has_valid_post:,}")
+    print(f"  Cases with both (complete valid pairs): {has_both:,}")
+    print(f"  Cases with valid baseline only: {baseline_only:,}")
     
-    # STEP 4: Add metadata columns
-    print("\nStep 4: Adding metadata columns...")
+    # STEP 3: Add metadata columns
+    print("\nStep 3: Adding metadata columns...")
     df_with_metadata = df_clean.merge(
-        case_summary_df[['case_ref', 'num_assessments', 'has_baseline', 'has_outcome']], 
+        case_summary_df[['case_ref', 'num_assessments', 'has_valid_baseline', 'has_valid_post_support', 'has_both']], 
         on='case_ref', 
         how='left'
     )
@@ -287,7 +300,9 @@ def clean_snap_dataset(df):
     # Add date range if date column exists
     if 'Date of assessment' in df_clean.columns:
         df_with_metadata['Date of assessment'] = pd.to_datetime(
-            df_with_metadata['Date of assessment'], errors='coerce'
+            df_with_metadata['Date of assessment'], 
+            format='%d/%m/%Y',  # Specify the format explicitly
+            errors='coerce'
         )
         
         # Calculate date ranges for each case
@@ -299,22 +314,7 @@ def clean_snap_dataset(df):
         
         df_with_metadata = df_with_metadata.merge(date_ranges, on='case_ref', how='left')
     
-    print(f"Final dataset: {len(df_with_metadata):,} rows, {df_with_metadata['case_ref'].nunique():,} unique cases")
-    
-    # STEP 5: Quality checks
-    print("\nStep 5: Data quality summary...")
-    
-    # Check outcome completeness
-    if 'Possible to record outcomes:' in df_with_metadata.columns:
-        outcome_possible = df_with_metadata['Possible to record outcomes:'].value_counts()
-        print(f"  Outcome recording possible: {dict(outcome_possible)}")
-    
-    # Check for cases with multiple timepoints
-    multiple_timepoints = case_summary_df[case_summary_df['num_assessments'] > 2]
-    if len(multiple_timepoints) > 0:
-        print(f"  Cases with >2 assessments: {len(multiple_timepoints):,}")
-        for _, case in multiple_timepoints.head(3).iterrows():
-            print(f"    {case['case_ref']}: {case['num_assessments']} assessments, timepoints: {case['timepoints']}")
+    print(f"\nFinal dataset: {len(df_with_metadata):,} rows, {df_with_metadata['case_ref'].nunique():,} unique cases")
     
     return df_with_metadata
 
