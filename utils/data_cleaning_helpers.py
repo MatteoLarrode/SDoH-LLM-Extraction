@@ -198,6 +198,32 @@ def clean_referrals_dataset(df):
     
     return df_final
 
+def consolidate_referrals_longest(df):
+    """
+    Consolidate referrals dataset to one row per case by keeping the longest referral.
+    For cases with multiple referrals, this preserves maximum information content.
+    """
+    
+    print("=== CONSOLIDATING REFERRALS TO ONE PER CASE ===")
+    print(f"Initial referrals: {len(df):,} rows, {df['case_ref'].nunique():,} unique cases")
+    
+    # Calculate referral note lengths
+    df['note_length'] = df['Referral Notes (depersonalised)'].fillna('').str.split().str.len()
+    
+    # For each case, find the row with the longest referral note
+    # In case of ties, this will take the first occurrence
+    longest_referrals = df.loc[df.groupby('case_ref')['note_length'].idxmax()].copy()
+    
+    # Report consolidation results
+    cases_with_multiple = (df['case_ref'].value_counts() > 1).sum()
+    print(f"Cases with multiple referrals: {cases_with_multiple:,}")
+    print(f"After consolidation: {len(longest_referrals):,} rows (one per case)")
+    
+    # Clean up temporary column
+    longest_referrals = longest_referrals.drop('note_length', axis=1)
+    
+    return longest_referrals
+
 def clean_snap_dataset(df):
     """
     Clean SNAP dataset focusing on baseline-outcome pairs and removing
@@ -285,9 +311,9 @@ def clean_snap_dataset(df):
     baseline_only = case_summary_df['has_valid_baseline'].sum() - has_both
     
     print(f"  Cases with valid baseline: {has_valid_baseline:,}")
-    print(f"  Cases with valid post-support: {has_valid_post:,}")
-    print(f"  Cases with both (complete valid pairs): {has_both:,}")
     print(f"  Cases with valid baseline only: {baseline_only:,}")
+    print(f"  Cases with valid post-support: {has_valid_post:,}")
+    print(f"\n  Cases with both (complete valid pairs): {has_both:,}")
     
     # STEP 3: Add metadata columns
     print("\nStep 3: Adding metadata columns...")
@@ -318,67 +344,67 @@ def clean_snap_dataset(df):
     
     return df_with_metadata
 
-def remove_duplicate_sentences_per_case(df):
-        """
-        Remove duplicate sentences within each case reference.
-        As was done in Keloth et al. (2025).
-        """
-        print("Removing duplicate sentences within cases...")
+# def remove_duplicate_sentences_per_case(df):
+#         """
+#         Remove duplicate sentences within each case reference.
+#         As was done in Keloth et al. (2025).
+#         """
+#         print("Removing duplicate sentences within cases...")
         
-        # Group by Case Reference
-        grouped = df.groupby('Case Reference')
+#         # Group by Case Reference
+#         grouped = df.groupby('Case Reference')
         
-        cleaned_rows = []
-        total_original_sentences = 0
-        total_unique_sentences = 0
+#         cleaned_rows = []
+#         total_original_sentences = 0
+#         total_unique_sentences = 0
         
-        for case_ref, group in grouped:
-            # Collect all sentences for this case
-            all_sentences = []
+#         for case_ref, group in grouped:
+#             # Collect all sentences for this case
+#             all_sentences = []
             
-            for idx, row in group.iterrows():
-                sentences = split_into_sentences(row['Referral Notes (depersonalised)'])
-                all_sentences.extend(sentences)
+#             for idx, row in group.iterrows():
+#                 sentences = split_into_sentences(row['Referral Notes (depersonalised)'])
+#                 all_sentences.extend(sentences)
             
-            total_original_sentences += len(all_sentences)
+#             total_original_sentences += len(all_sentences)
             
-            # Remove duplicates while preserving order
-            unique_sentences = []
-            seen_sentences = set()
+#             # Remove duplicates while preserving order
+#             unique_sentences = []
+#             seen_sentences = set()
             
-            for sentence in all_sentences:
-                # Normalize sentence for comparison (lowercase, remove extra whitespace)
-                normalized = re.sub(r'\s+', ' ', sentence.lower().strip())
+#             for sentence in all_sentences:
+#                 # Normalize sentence for comparison (lowercase, remove extra whitespace)
+#                 normalized = re.sub(r'\s+', ' ', sentence.lower().strip())
                 
-                if normalized not in seen_sentences and len(normalized) > 0:
-                    seen_sentences.add(normalized)
-                    unique_sentences.append(sentence)
+#                 if normalized not in seen_sentences and len(normalized) > 0:
+#                     seen_sentences.add(normalized)
+#                     unique_sentences.append(sentence)
             
-            total_unique_sentences += len(unique_sentences)
+#             total_unique_sentences += len(unique_sentences)
             
-            # If we have unique sentences, create new rows
-            if unique_sentences:
-                # Take the first row as template
-                template_row = group.iloc[0].copy()
+#             # If we have unique sentences, create new rows
+#             if unique_sentences:
+#                 # Take the first row as template
+#                 template_row = group.iloc[0].copy()
                 
-                # Combine unique sentences back into referral notes
-                combined_notes = '. '.join(unique_sentences)
-                if not combined_notes.endswith('.'):
-                    combined_notes += '.'
+#                 # Combine unique sentences back into referral notes
+#                 combined_notes = '. '.join(unique_sentences)
+#                 if not combined_notes.endswith('.'):
+#                     combined_notes += '.'
                 
-                template_row['Referral Notes (depersonalised)'] = combined_notes
-                cleaned_rows.append(template_row)
+#                 template_row['Referral Notes (depersonalised)'] = combined_notes
+#                 cleaned_rows.append(template_row)
         
-        print(f"Original sentences: {total_original_sentences}")
-        print(f"Unique sentences: {total_unique_sentences}")
-        print(f"Sentences removed: {total_original_sentences - total_unique_sentences}")
+#         print(f"Original sentences: {total_original_sentences}")
+#         print(f"Unique sentences: {total_unique_sentences}")
+#         print(f"Sentences removed: {total_original_sentences - total_unique_sentences}")
         
-        # Create new dataframe
-        if cleaned_rows:
-            result_df = pd.DataFrame(cleaned_rows)
-            return result_df.reset_index(drop=True)
-        else:
-            return pd.DataFrame()
+#         # Create new dataframe
+#         if cleaned_rows:
+#             result_df = pd.DataFrame(cleaned_rows)
+#             return result_df.reset_index(drop=True)
+#         else:
+#             return pd.DataFrame()
 
 def clean_text(text: str) -> str:
         """Basic text cleaning"""
