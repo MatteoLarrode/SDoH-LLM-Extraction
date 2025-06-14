@@ -132,3 +132,32 @@ def split_into_sentences(text: str) -> List[str]:
                 cleaned_sentences.append(cleaned)
         
         return cleaned_sentences
+
+def get_note_length_category(note):
+    """
+    Categorizes a given text note based on its word count.
+
+    Parameters:
+    notes (str or any): The input note to analyze. Can be a string or any value.
+                        If the input is NaN or an empty string, it is treated as 'No note'.
+
+    Returns:
+    str: A category describing the note:
+         - 'No note': If the input is NaN or an empty string.
+         - 'Short note (<5 words)': If the note contains fewer than 5 words.
+         - 'Medium note (5-19 words)': If the note contains between 5 and 19 words.
+         - 'Long note (20+ words)': If the note contains 20 or more words.
+
+    Notes:
+    - The function converts the input to a string before processing.
+    - Leading and trailing whitespace in the input are ignored.
+    """
+    if pd.isna(note) or str(note).strip() == '':
+        return 'No note'
+    word_count = len(str(note).split())
+    if word_count < 5:
+        return 'Short note (<5 words)'
+    elif word_count < 20:
+        return 'Medium note (5-19 words)'
+    else:
+        return 'Long note (20+ words)'
