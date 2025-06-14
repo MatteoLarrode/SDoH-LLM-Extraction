@@ -17,9 +17,7 @@ def clean_na_variations(text):
         # Define NA variations (case-insensitive)
         na_patterns = [
             r'^n/?a$',           # n/a, na, N/A, NA
-            r'^not applicable$',  # not applicable
             r'^none$',           # none
-            r'^nil$',            # nil
             r'^-+$',             # dashes like -, --, ---
             r'^\.+$',            # dots like ., .., ...
             r'^null$',           # null
@@ -34,6 +32,291 @@ def clean_na_variations(text):
                 return np.nan
         
         return text
+
+def clean_referrals_dataset(df):
+    """
+    Clean referrals dataset by removing identical rows and consolidating cases
+    with multiple observations while preserving information about observation
+    patterns and date ranges.
+    """
+    
+    print("=== REFERRALS DATASET PRE-CLEANING ===")
+    print(f"Initial dataset: {len(df):,} rows, {df['case_ref'].nunique():,} unique cases")
+    
+    # STEP 0: Apply NA cleaning to all text columns
+    print("\nStep 0: Cleaning NA variations in text columns...")
+    text_columns = df.select_dtypes(include=['object']).columns
+    
+    for col in text_columns:
+        original_na_count = df[col].isna().sum()
+        df[col] = df[col].apply(clean_na_variations)
+        new_na_count = df[col].isna().sum()
+        additional_na = new_na_count - original_na_count
+        if additional_na > 0:
+            print(f"  {col}: {additional_na:,} additional NAs identified")
+    
+    # Step 1: Remove identical rows based on specified columns
+    print("\nStep 1: Removing identical rows...")
+    dedup_cols = ['case_ref', 'Referral Notes (depersonalised)', 'Referral Date/Time']
+    
+    # Check which columns actually exist
+    available_dedup_cols = [col for col in dedup_cols if col in df.columns]
+    print(f"  Using columns: {available_dedup_cols}")
+    
+    initial_rows = len(df)
+    df_clean = df.drop_duplicates(subset=available_dedup_cols, keep='first').copy()  # Added .copy()
+    removed_identical = initial_rows - len(df_clean)
+    print(f"  Removed {removed_identical:,} identical rows")
+    print(f"  Remaining: {len(df_clean):,} rows, {df_clean['case_ref'].nunique():,} unique cases")
+    
+    # Step 2: Process cases with multiple rows
+    print("\nStep 2: Processing cases with multiple observations...")
+    
+    # Convert date column to datetime if it exists
+    date_col = 'Referral Date/Time' if 'Referral Date/Time' in df_clean.columns else None
+    if date_col:
+        df_clean[date_col] = pd.to_datetime(df_clean[date_col], errors='coerce')
+    
+    # Group by case_ref and create summary statistics
+    case_groups = df_clean.groupby('case_ref')
+    
+    # Create summary information for each case
+    case_summary = []
+    for case_ref, group in case_groups:
+        summary = {
+            'case_ref': case_ref,
+            'num_observations': len(group),
+            'has_referral_notes': group['Referral Notes (depersonalised)'].notna().any() if 'Referral Notes (depersonalised)' in group.columns else False
+        }
+        
+        # Add date range information if date column exists
+        if date_col and group[date_col].notna().any():
+            valid_dates = group[date_col].dropna()
+            if len(valid_dates) > 0:
+                summary['date_range_start'] = valid_dates.min()
+                summary['date_range_end'] = valid_dates.max()
+                summary['date_range_days'] = (valid_dates.max() - valid_dates.min()).days if len(valid_dates) > 1 else 0
+            else:
+                summary['date_range_start'] = None
+                summary['date_range_end'] = None
+                summary['date_range_days'] = None
+        
+        case_summary.append(summary)
+    
+    case_summary_df = pd.DataFrame(case_summary)
+    
+    # Step 2a: Add observation count and date range columns to original data
+    print("  Step 2a: Adding observation count and date range columns...")
+    
+    df_with_summary = df_clean.merge(
+        case_summary_df[['case_ref', 'num_observations', 'date_range_start', 'date_range_end', 'date_range_days']], 
+        on='case_ref', 
+        how='left'
+    )
+    
+    # Step 2b: For cases with multiple rows, remove rows without referral notes if others have them
+    print("  Step 2b: Removing rows without referral notes when others exist...")
+    
+    def filter_group(group):
+        if len(group) == 1:
+            return group
+        
+        # Check if referral notes column exists
+        if 'Referral Notes (depersonalised)' not in group.columns:
+            # If no referral notes column, just keep most recent
+            if date_col and group[date_col].notna().any():
+                return group.loc[group[date_col].idxmax()].to_frame().T
+            else:
+                return group.tail(1)
+        
+        has_notes = group['Referral Notes (depersonalised)'].notna()
+        
+        if has_notes.any() and not has_notes.all():
+            # Some have notes, some don't - keep only those with notes
+            return group[has_notes]
+        else:
+            # Either all have notes or none have notes - continue to next step
+            return group
+    
+    df_filtered = df_with_summary.groupby('case_ref').apply(filter_group).reset_index(drop=True)
+    removed_no_notes = len(df_with_summary) - len(df_filtered)
+    print(f"    Removed {removed_no_notes:,} rows without referral notes")
+    
+    # Step 2c: For remaining cases with multiple rows, check if referral notes are identical
+    print("  Step 2c: Consolidating cases with identical or missing referral notes...")
+    
+    def consolidate_group(group):
+        if len(group) == 1:
+            return group
+        
+        # Check referral notes similarity
+        if 'Referral Notes (depersonalised)' in group.columns:
+            unique_notes = group['Referral Notes (depersonalised)'].dropna().nunique()
+            all_notes_na = group['Referral Notes (depersonalised)'].isna().all()
+            
+            if unique_notes <= 1 or all_notes_na:
+                # All notes are the same or all are missing - keep most recent
+                if date_col and group[date_col].notna().any():
+                    return group.loc[group[date_col].idxmax()].to_frame().T
+                else:
+                    return group.tail(1)
+            else:
+                # Different notes - keep all rows
+                return group
+        else:
+            # No referral notes column - keep most recent
+            if date_col and group[date_col].notna().any():
+                return group.loc[group[date_col].idxmax()].to_frame().T
+            else:
+                return group.tail(1)
+    
+    df_final = df_filtered.groupby('case_ref').apply(consolidate_group).reset_index(drop=True)
+    removed_identical_notes = len(df_filtered) - len(df_final)
+    print(f"    Consolidated {removed_identical_notes:,} rows with identical/missing referral notes")
+    
+    # Final summary
+    print(f"\nFinal dataset: {len(df_final):,} rows, {df_final['case_ref'].nunique():,} unique cases")
+    
+    # Show cases that still have multiple rows (different referrals on different dates)
+    remaining_duplicates = df_final['case_ref'].value_counts()
+    cases_with_multiple_rows = remaining_duplicates[remaining_duplicates > 1]
+    
+    print(f"\nCases with multiple rows remaining (different referrals): {len(cases_with_multiple_rows):,}")
+    if len(cases_with_multiple_rows) > 0:
+        print("Top 5 cases by number of remaining rows:")
+        for case_ref, count in cases_with_multiple_rows.head().items():
+            print(f"  {case_ref}: {count} rows")
+            
+        # Show example of remaining duplicates
+        example_case = cases_with_multiple_rows.index[0]
+        example_rows = df_final[df_final['case_ref'] == example_case]
+        print(f"\nExample case {example_case} with different referrals:")
+        for idx, row in example_rows.iterrows():
+            date_str = row[date_col].strftime('%Y-%m-%d') if date_col and pd.notna(row[date_col]) else "No date"
+            note_preview = str(row['Referral Notes (depersonalised)'])[:100] + "..." if pd.notna(row['Referral Notes (depersonalised)']) else "No referral note"
+            print(f"  {date_str}: {note_preview}")
+    
+    return df_final
+
+def clean_snap_dataset(df):
+    """
+    Clean SNAP dataset focusing on baseline-outcome pairs and removing
+    incomplete or duplicate assessments.
+    """
+    
+    print("=== SNAP DATASET PRE-CLEANING ===")
+    print(f"Initial dataset: {len(df):,} rows, {df['case_ref'].nunique():,} unique cases")
+    
+    # STEP 0: Apply NA cleaning to all text columns
+    print("\nStep 0: Cleaning NA variations in text columns...")
+    text_columns = df.select_dtypes(include=['object']).columns
+    
+    for col in text_columns:
+        original_na_count = df[col].isna().sum()
+        df[col] = df[col].apply(clean_na_variations)
+        new_na_count = df[col].isna().sum()
+        additional_na = new_na_count - original_na_count
+        if additional_na > 0:
+            print(f"  {col}: {additional_na:,} additional NAs identified")
+    
+    # STEP 1: Remove perfect duplicates
+    print("\nStep 1: Removing perfect duplicates...")
+    # Exclude depersonalized columns from duplicate detection
+    exclude_cols = ['Has Disability', 'IMD Decile', 'Country', 'Age', 'Gender', 'Ethnicity', 'Living Arrangements']
+    analysis_cols = [col for col in df.columns if col not in exclude_cols]
+    
+    initial_rows = len(df)
+    df_clean = df.drop_duplicates(subset=analysis_cols, keep='first').copy()
+    removed_duplicates = initial_rows - len(df_clean)
+    print(f"  Removed {removed_duplicates:,} perfect duplicates")
+    
+    # STEP 2: Analyze timepoint structure
+    print("\nStep 2: Analyzing timepoint structure...")
+    if 'Timepoint' in df_clean.columns:
+        timepoint_counts = df_clean['Timepoint'].value_counts().sort_index()
+        print(f"  Timepoint distribution: {dict(timepoint_counts)}")
+    
+    if 'Survey completed:' in df_clean.columns:
+        survey_timing = df_clean['Survey completed:'].value_counts()
+        print(f"  Survey timing: {dict(survey_timing)}")
+    
+    # STEP 3: Identify complete baseline-outcome pairs
+    print("\nStep 3: Identifying baseline-outcome pairs...")
+    
+    # Group by case and check for paired data
+    case_summary = []
+    for case_ref, group in df_clean.groupby('case_ref'):
+        summary = {
+            'case_ref': case_ref,
+            'num_assessments': len(group),
+            'has_baseline': False,
+            'has_outcome': False,
+            'timepoints': group['Timepoint'].tolist() if 'Timepoint' in group.columns else [],
+            'survey_types': group['Survey completed:'].tolist() if 'Survey completed:' in group.columns else []
+        }
+        
+        # Check for baseline (timepoint 1 or "at the start")
+        if 'Timepoint' in group.columns:
+            summary['has_baseline'] = 1.0 in group['Timepoint'].values
+            summary['has_outcome'] = 2.0 in group['Timepoint'].values
+        elif 'Survey completed:' in group.columns:
+            summary['has_baseline'] = 'at the start of support' in group['Survey completed:'].values
+            summary['has_outcome'] = 'at the end of support' in group['Survey completed:'].values
+        
+        case_summary.append(summary)
+    
+    case_summary_df = pd.DataFrame(case_summary)
+    
+    # Report on data structure
+    complete_pairs = case_summary_df['has_baseline'] & case_summary_df['has_outcome']
+    baseline_only = case_summary_df['has_baseline'] & ~case_summary_df['has_outcome']
+    outcome_only = ~case_summary_df['has_baseline'] & case_summary_df['has_outcome']
+    
+    print(f"  Complete pairs (baseline + outcome): {complete_pairs.sum():,} cases")
+    print(f"  Baseline only: {baseline_only.sum():,} cases")
+    print(f"  Outcome only: {outcome_only.sum():,} cases")
+    
+    # STEP 4: Add metadata columns
+    print("\nStep 4: Adding metadata columns...")
+    df_with_metadata = df_clean.merge(
+        case_summary_df[['case_ref', 'num_assessments', 'has_baseline', 'has_outcome']], 
+        on='case_ref', 
+        how='left'
+    )
+    
+    # Add date range if date column exists
+    if 'Date of assessment' in df_clean.columns:
+        df_with_metadata['Date of assessment'] = pd.to_datetime(
+            df_with_metadata['Date of assessment'], errors='coerce'
+        )
+        
+        # Calculate date ranges for each case
+        date_ranges = df_with_metadata.groupby('case_ref')['Date of assessment'].agg([
+            ('first_assessment', 'min'),
+            ('last_assessment', 'max'),
+            ('assessment_span_days', lambda x: (x.max() - x.min()).days if x.notna().sum() > 1 else 0)
+        ]).reset_index()
+        
+        df_with_metadata = df_with_metadata.merge(date_ranges, on='case_ref', how='left')
+    
+    print(f"Final dataset: {len(df_with_metadata):,} rows, {df_with_metadata['case_ref'].nunique():,} unique cases")
+    
+    # STEP 5: Quality checks
+    print("\nStep 5: Data quality summary...")
+    
+    # Check outcome completeness
+    if 'Possible to record outcomes:' in df_with_metadata.columns:
+        outcome_possible = df_with_metadata['Possible to record outcomes:'].value_counts()
+        print(f"  Outcome recording possible: {dict(outcome_possible)}")
+    
+    # Check for cases with multiple timepoints
+    multiple_timepoints = case_summary_df[case_summary_df['num_assessments'] > 2]
+    if len(multiple_timepoints) > 0:
+        print(f"  Cases with >2 assessments: {len(multiple_timepoints):,}")
+        for _, case in multiple_timepoints.head(3).iterrows():
+            print(f"    {case['case_ref']}: {case['num_assessments']} assessments, timepoints: {case['timepoints']}")
+    
+    return df_with_metadata
 
 def remove_duplicate_sentences_per_case(df):
         """
