@@ -444,10 +444,10 @@ def split_into_sentences(text: str) -> List[str]:
 
 def get_note_length_category(note):
     """
-    Categorizes a given text note based on its word count.
+    Categorises a given text note based on its word count.
 
     Parameters:
-    notes (str or any): The input note to analyze. Can be a string or any value.
+    notes (str or any): The input note to analyse. Can be a string or any value.
                         If the input is NaN or an empty string, it is treated as 'No note'.
 
     Returns:
