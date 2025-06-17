@@ -23,7 +23,7 @@ sys.path.append('.')
 
 from utils.SDoH_classification_helpers import SDoHExtractor
 from utils.model_helpers import load_instruction_model
-from utils.evaluation_helpers import (
+from utils.evaluation_helpers_lvl1 import (
     calculate_multilabel_metrics,
     print_multilabel_analysis,
     save_evaluation_results
