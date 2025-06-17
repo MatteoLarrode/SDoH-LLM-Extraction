@@ -344,6 +344,102 @@ def clean_snap_dataset(df):
     
     return df_with_metadata
 
+def clean_hiu_dataset(df):
+   """
+   Clean HIU dataset focusing on baseline-outcome pairs and removing
+   incomplete or duplicate assessments.
+   """
+   
+   print("=== HIU DATASET PRE-CLEANING ===")
+   print(f"Initial dataset: {len(df):,} rows, {df['case_ref'].nunique():,} unique cases")
+   
+   # STEP 0: Apply NA cleaning to all text columns
+   print("\nStep 0: Cleaning NA variations in text columns...")
+   text_columns = df.select_dtypes(include=['object']).columns
+   for col in text_columns:
+       df[col] = df[col].apply(clean_na_variations)
+   
+   # STEP 1: Remove perfect duplicates
+   print("\nStep 1: Removing perfect duplicates...")
+   exclude_cols = ['Age', 'Gender', 'Ethnicity', 'Living Arrangements']
+   analysis_cols = [col for col in df.columns if col not in exclude_cols]
+   
+   initial_rows = len(df)
+   df_clean = df.drop_duplicates(subset=analysis_cols, keep='first').copy()
+   removed_duplicates = initial_rows - len(df_clean)
+   print(f"  Removed {removed_duplicates:,} perfect duplicates")
+   
+   # STEP 2: Identify valid baseline and valid post-support pairs
+   print("\nStep 2: Identifying valid assessments by Time Points...")
+   
+   case_summary = []
+   for case_ref, group in df_clean.groupby('case_ref'):
+       summary = {
+           'case_ref': case_ref,
+           'num_assessments': len(group),
+           'has_valid_baseline': False,
+           'has_valid_end': False,
+           'has_valid_mid': False,
+           'has_both': False
+       }
+       
+       # Check Time Points patterns and outcome validity
+       time_points = group['Time Points'].dropna().unique()
+       
+       # Check for valid outcomes (Q6 indicates if outcomes are recordable)
+       if 'Q6. Why wasn\'t it possible to record outcomes for this client?' in group.columns:
+           # If Q6 is filled, outcomes were NOT possible - so we need Q6 to be empty/NaN for valid outcomes
+           valid_outcomes_mask = group['Q6. Why wasn\'t it possible to record outcomes for this client?'].isna()
+       else:
+           # If no Q6 column, assume all are valid
+           valid_outcomes_mask = pd.Series([True] * len(group), index=group.index)
+       
+       valid_group = group[valid_outcomes_mask]
+       
+       if len(valid_group) > 0:
+           valid_time_points = valid_group['Time Points'].dropna().unique()
+           
+           # Check what valid time points we have
+           for tp in valid_time_points:
+               if 'Start' in str(tp):
+                   summary['has_valid_baseline'] = True
+               if 'End' in str(tp):
+                   summary['has_valid_end'] = True
+               if 'Mid' in str(tp):
+                   summary['has_valid_mid'] = True
+       
+       # Has both baseline and end
+       summary['has_both'] = summary['has_valid_baseline'] and summary['has_valid_end']
+       
+       case_summary.append(summary)
+   
+   case_summary_df = pd.DataFrame(case_summary)
+   
+   # Report on data structure
+   has_valid_baseline = case_summary_df['has_valid_baseline'].sum()
+   has_valid_end = case_summary_df['has_valid_end'].sum()
+   has_valid_mid = case_summary_df['has_valid_mid'].sum()
+   has_both = case_summary_df['has_both'].sum()
+   baseline_only = has_valid_baseline - has_both
+   
+   print(f"  Cases with valid baseline: {has_valid_baseline:,}")
+   print(f"  Cases with valid end: {has_valid_end:,}")
+   print(f"  Cases with valid mid: {has_valid_mid:,}")
+   print(f"  Cases with baseline + end (complete pairs): {has_both:,}")
+   print(f"  Cases with baseline only: {baseline_only:,}")
+   
+   # STEP 3: Add metadata columns
+   print("\nStep 3: Adding metadata columns...")
+   df_with_metadata = df_clean.merge(
+       case_summary_df[['case_ref', 'num_assessments', 'has_valid_baseline', 'has_valid_end', 'has_valid_mid', 'has_both']], 
+       on='case_ref', 
+       how='left'
+   )
+   
+   print(f"\nFinal dataset: {len(df_with_metadata):,} rows, {df_with_metadata['case_ref'].nunique():,} unique cases")
+   
+   return df_with_metadata
+
 def clean_text(text: str) -> str:
         """Basic text cleaning"""
         # Remove extra whitespace

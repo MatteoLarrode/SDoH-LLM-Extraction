@@ -232,8 +232,7 @@ class SDoHExtractor:
                     do_sample=False,  
                     pad_token_id=self.tokenizer.eos_token_id,
                     eos_token_id=self.tokenizer.eos_token_id,
-                    repetition_penalty=1, 
-                    stop_strings=["</LIST>", "\n\n", "\n", "Input:", "Example"],
+                    repetition_penalty=1
                 )
             
             # Decode response
