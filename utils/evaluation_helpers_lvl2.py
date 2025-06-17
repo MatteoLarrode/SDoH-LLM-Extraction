@@ -106,16 +106,14 @@ def calculate_level2_multilabel_metrics(results_df: pd.DataFrame) -> Tuple[Dict[
     sdoh_only_pred = []
     
     for _, row in results_df.iterrows():
-        # Convert annotations to Level 2 format if needed
-        if 'original_adversity' in row and row['original_adversity'] is not None:
-            # Convert from separate SDoH + adversity columns
+        if 'ground_truth_level2' in row:
+            gt_labels = parse_level2_labels_to_list(row['ground_truth_level2'])
+        else:
+            # Fallback to conversion
             gt_labels = parse_level1_with_adversity_to_level2(
                 row['original_label'], 
                 row['original_adversity']
             )
-        else:
-            # Assume already in Level 2 format
-            gt_labels = parse_level2_labels_to_list(row['original_label'])
         
         pred_labels = parse_level2_labels_to_list(row['model_prediction'])
         

@@ -28,6 +28,12 @@ from utils.evaluation_helpers_lvl1 import (
     print_multilabel_analysis,
     save_evaluation_results
 )
+from utils.evaluation_helpers_lvl2 import (
+    calculate_level2_multilabel_metrics,
+    print_level2_multilabel_analysis,
+    save_level2_evaluation_results,
+    parse_level1_with_adversity_to_level2
+)
 
 class AnnotationEvaluator:
     """Evaluator for annotated sentence-level SDoH data with proper multi-label metrics"""
@@ -66,7 +72,7 @@ class AnnotationEvaluator:
         return df
     
     def process_sentences(self, annotated_df: pd.DataFrame, extractor: SDoHExtractor, 
-                         model_name: str) -> pd.DataFrame:
+                         model_name: str, level: int) -> pd.DataFrame:
         """Process all annotated sentences and collect results"""
         
         print(f"\nProcessing {len(annotated_df)} sentences...")
@@ -105,6 +111,15 @@ class AnnotationEvaluator:
                     'level': extractor.level,
                     'processing_time_seconds': time.time() - sentence_start
                 }
+
+                 # For Level 2, add converted ground truth
+                if level == 2:
+                    gt_level2 = parse_level1_with_adversity_to_level2(
+                        row['Label'], 
+                        row.get('Adverse', '')
+                    )
+                    result['ground_truth_level2'] = ", ".join(gt_level2) if gt_level2 else "NoSDoH"
+            
                 
                 results.append(result)
                 
@@ -156,7 +171,10 @@ def main():
     
     try:
         print("="*70)
-        print("SDoH ANNOTATION EVALUATION WITH PROPER MULTI-LABEL METRICS")
+        if args.level == 2:
+            print("SDoH LEVEL 2 EVALUATION (SDoH + ADVERSITY) WITH MULTI-LABEL METRICS")
+        else:
+            print("SDoH ANNOTATION EVALUATION WITH MULTI-LABEL METRICS")
         print("="*70)
         print(f"Model: {args.model_name}")
         print(f"Prompt: {args.prompt_type} (Level {args.level})")
@@ -192,17 +210,56 @@ def main():
         )
         
         # Process sentences
-        results_df = evaluator.process_sentences(annotated_df, extractor, args.model_name)
+        results_df = evaluator.process_sentences(annotated_df, extractor, args.model_name, args.level)
         
         if len(results_df) == 0:
             print("No sentences were successfully processed!")
             return
         
-        # Calculate proper multi-label metrics
-        metrics, mlb, y_true, y_pred = calculate_multilabel_metrics(results_df)
+        # Calculate multi-label metrics, based on the level
+        if args.level == 2:
+            # Use Level 2 evaluation
+            metrics, mlb, y_true, y_pred = calculate_level2_multilabel_metrics(results_df)
+            
+            # Print Level 2 analysis
+            print_level2_multilabel_analysis(results_df, metrics, mlb, y_true, y_pred)
+            
+            # Save Level 2 results
+            results_path, metrics_path = save_level2_evaluation_results(
+                results_df, metrics, args.model_name, args.prompt_type, args.level, args.output_dir
+            )
+            
+            if results_path:
+                print("\n" + "="*70)
+                print("LEVEL 2 EVALUATION COMPLETE")
+                print("="*70)
+                print(f"Key Results:")
+                print(f"  Exact Level 2 Match: {metrics['combined_analysis']['exact_level2_match_rate']:.3f}")
+                print(f"  SDoH-only Match:     {metrics['combined_analysis']['sdoh_only_match_rate']:.3f}")
+                print(f"  Adversity Accuracy:  {metrics['adversity_only']['adversity_accuracy']:.3f}")
+                print(f"  Level 2 Micro F1:    {metrics['level2_full']['label_based']['micro_f1']:.3f}")
+                print("="*70)
         
-        # Print comprehensive analysis
-        print_multilabel_analysis(results_df, metrics, mlb, y_true, y_pred)
+        else:
+            metrics, mlb, y_true, y_pred = calculate_multilabel_metrics(results_df)
+            print_multilabel_analysis(results_df, metrics, mlb, y_true, y_pred)
+            
+            results_path, metrics_path = save_evaluation_results(
+                results_df, metrics, args.model_name, args.prompt_type, args.level, args.output_dir
+            )
+            
+            if results_path:
+                print("\n" + "="*70)
+                print("EVALUATION COMPLETE")
+                print("="*70)
+                print(f"Key Results:")
+                print(f"  Exact Match Ratio: {metrics['example_based']['exact_match_ratio']:.3f}")
+                print(f"  Example-based F1:  {metrics['example_based']['f1_score']:.3f}")
+                print(f"  Macro F1:          {metrics['label_based']['macro_f1']:.3f}")
+                print(f"  Micro F1:          {metrics['label_based']['micro_f1']:.3f}")
+                print("="*70)
+            else:
+                print("Warning: Results could not be saved properly")
         
         # Filter results if requested
         if args.save_mismatches_only:
@@ -216,29 +273,10 @@ def main():
             
             results_df = results_df.drop(results_df.index[exact_matches])
             print(f"\nSaving only {len(results_df)} non-exact matches for error analysis")
-        
-        # Save results
-        results_path, metrics_path = save_evaluation_results(
-        results_df, metrics, args.model_name, args.prompt_type, args.level, args.output_dir
-    )
-    
-        if results_path:
-            print("\n" + "="*70)
-            print("EVALUATION COMPLETE")
-            print("="*70)
-            print(f"Key Results:")
-            print(f"  Exact Match Ratio: {metrics['example_based']['exact_match_ratio']:.3f}")
-            print(f"  Example-based F1:  {metrics['example_based']['f1_score']:.3f}")
-            print(f"  Macro F1:          {metrics['label_based']['macro_f1']:.3f}")
-            print(f"  Micro F1:          {metrics['label_based']['micro_f1']:.3f}")
-            print("="*70)
-        else:
-            print("Warning: Results could not be saved properly")
             
     except Exception as e:
         print(f"Error during save/summary: {e}")
         print("Evaluation completed but results may not be saved")
-
 
 if __name__ == "__main__":
     main()
