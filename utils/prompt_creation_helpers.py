@@ -221,6 +221,69 @@ Output: """
 Output: """
 
 
+# ================================================
+# Prompt generator for GUEVARA SDoH labels
+# ================================================
+
+GUEVARA_SDOH = [
+    'EMPLOYMENT', 'HOUSING', 'PARENT', 
+    'RELATIONSHIP', 'SUPPORT', 'TRANSPORTATION'
+]
+
+def create_guevara_prompt(sentence: str) -> str:
+    """
+    Create an instruction prompt for LLaMA 3.1 to classify a sentence
+    using only the GUEVARA SDoH label set.
+    
+    Args:
+        sentence: Input sentence (single sentence)
+    
+    Returns:
+        Formatted prompt string with instruction and few-shot examples
+    """
+    
+    label_list = ", ".join(GUEVARA_SDOH)
+
+    instructions = f"""You are a helpful assistant trained to identify mentions of Social Determinants of Health (SDoH).
+
+Given a sentence, output all relevant SDoH categories from the following list:
+{label_list}.
+
+- Use a comma-separated list embedded inside <LIST> and </LIST> tags.
+- If none apply, output <LIST>NoSDoH</LIST>.
+- Do NOT include any extra text or explanations."""
+
+    few_shot = """EXAMPLES:
+Input: "He lost his job during the pandemic and lives with a friend."
+Output: <LIST>EMPLOYMENT, HOUSING</LIST>
+
+Input: "She relies on public buses but missed several medical appointments."
+Output: <LIST>TRANSPORTATION</LIST>
+
+Input: "They are first-time parents with no family nearby."
+Output: <LIST>PARENT, SUPPORT</LIST>
+
+Input: "She lives alone and has no close relationships."
+Output: <LIST>RELATIONSHIP, SUPPORT</LIST>
+
+Input: "Patient was diagnosed with asthma at age 9."
+Output: <LIST>NoSDoH</LIST>"""
+
+    user_input = f'Input: "{sentence}"'
+
+    # === Format in LLaMA 3 chat template style ===
+    return f"""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
+
+{instructions}
+
+{few_shot}<|eot_id|><|start_header_id|>user<|end_header_id|>
+
+{user_input}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+
+"""
+
+
+
 # === Convenience functions for backward compatibility ===
 
 def create_zero_shot_basic_prompt(sentence: str, level: int = 1, tokenizer=None) -> str:
@@ -238,30 +301,3 @@ def create_five_shot_basic_prompt(sentence: str, level: int = 1, tokenizer=None)
 def create_five_shot_detailed_prompt(sentence: str, level: int = 1, tokenizer=None) -> str:
     """Backward compatible five-shot detailed prompt"""
     return create_automated_prompt(sentence, tokenizer, "five_shot_detailed", level)
-
-# === Usage Examples ===
-"""
-# Example 1: Basic usage
-prompt = create_automated_prompt(
-    sentence="Living on ready meals at present",
-    tokenizer=llama_tokenizer,
-    prompt_type="five_shot_detailed",
-    level=1
-)
-
-# Example 2: Level 2 classification
-prompt = create_automated_prompt(
-    sentence="He receives help from his sister",
-    tokenizer=qwen_tokenizer,
-    prompt_type="five_shot_basic", 
-    level=2
-)
-
-# Example 3: Zero-shot with Phi
-prompt = create_automated_prompt(
-    sentence="Unemployed for 6 months",
-    tokenizer=phi_tokenizer,
-    prompt_type="zero_shot_detailed",
-    level=1
-)
-"""
