@@ -38,3 +38,4 @@ dependencies:
     - python-dotenv
     - click
     - regex
+    - krippendorff
