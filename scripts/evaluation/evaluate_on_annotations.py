@@ -21,8 +21,8 @@ from typing import Dict, Any, List
 # Add the project root to the path
 sys.path.append('.')
 
-from utils.SDoH_classification_helpers import SDoHExtractor
-from utils.model_helpers import load_instruction_model
+from src.classification.SDoH_classification_helpers import SDoHExtractor
+from src.classification.model_helpers import load_instruction_model
 from utils.evaluation_helpers_lvl1 import (
     calculate_multilabel_metrics,
     print_multilabel_analysis,

@@ -20,9 +20,9 @@ from pathlib import Path
 # Add the project root to the path
 sys.path.append('.')
 
-from utils.SDoH_classification_helpers import SDoHExtractor
-from utils.batch_processing_helpers import BatchSDoHProcessor #, OptimisedBatchSDoHProcessor
-from utils.model_helpers import load_instruction_model
+from src.classification.SDoH_classification_helpers import SDoHExtractor
+from src.classification.batch_processing_helpers import BatchSDoHProcessor #, OptimisedBatchSDoHProcessor
+from src.classification.model_helpers import load_instruction_model
 
 
 def load_data(data_path: str) -> tuple[pd.DataFrame, str, str]:

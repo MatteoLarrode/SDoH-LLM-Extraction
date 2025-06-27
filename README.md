@@ -5,23 +5,46 @@ This project focuses on extracting Social Determinants of Health (SDoH) from cli
 
 ## Project Structure
 ```
-sdoh-extraction/
-├── data/
-│   ├── raw/           # Original, immutable data
-│   ├── processed/     # Cleaned and preprocessed data
-│   └── external/      # External datasets and references
-├── models/
-│   ├── trained/       # Trained model files
-│   └── checkpoints/   # Model checkpoints during training
-├── notebooks/         # Jupyter notebooks for exploration and analysis
-├── src/              # Source code for the project
-│   └── sdoh_extraction/  # Main package
-├── scripts/          # Standalone scripts
-├── configs/          # Configuration files
-├── results/
-│   ├── figures/      # Generated plots and visualizations
-│   └── outputs/      # Model outputs and results
-└── docs/             # Documentation
+.
+├── data/                        # All raw and processed datasets
+│   ├── raw/                    # External or source data (e.g. BRC, MIMIC-III, Label Studio)
+│   └── processed/              # Cleaned and merged data used in modeling and analysis
+│       ├── annotations/       # Human-generated SDoH annotations
+│       ├── brc-cleaned/       # Preprocessed BRC referral notes
+│       └── merged/            # Joined datasets (e.g. SNAP/HIU + referrals)
+
+├── notebooks/                  # Jupyter notebooks for experimentation and prototyping
+│   ├── 01_data_cleaning.ipynb
+│   ├── 02_annotation.ipynb
+│   ├── 03_extraction_pipeline.ipynb
+│   ├── 04_fine_tuning.ipynb
+│   └── 05_analysis.ipynb
+
+├── src/                        # Core source code for annotation, modeling, and evaluation
+│   ├── annotation/            # Annotation parsing, adjudication, inter-annotator agreement
+│   ├── classification/        # Prompting, model setup, classification helpers
+│   ├── config/                # Constants, global parameters, prompt configs
+│   ├── data_cleaning/         # Text preprocessing and referral cleaning functions
+│   └── evaluation/            # Metric calculations for SDoH extraction performance
+
+├── scripts/                    # Scripts for batch processing and automated runs
+│   ├── sdoh-extraction/       # Scripts to extract SDoH with different models/settings
+│   └── evaluation/            # Scripts to evaluate predictions against annotations
+
+├── results/                    # Outputs from experiments and model evaluation
+│   ├── annotation_evaluation/ # Detailed metrics for level 1 and 2 annotation performance
+│   ├── batch_results/         # Outputs from multi-model or multi-batch evaluations
+│   └── figures/               # Saved visualizations (e.g. plots, charts)
+
+├── streamlit_app/             # Streamlit interface for visualizing and interacting with results
+│   ├── app.py                 # Main Streamlit app entrypoint
+│   ├── config.py              # Streamlit app configuration
+│   └── components/           # Modular UI components (e.g. data browser, model runner, tabs)
+
+├── environment.yml            # Conda environment definition
+├── README.md                  # Project documentation and structure
+├── .gitignore                 # Files and folders to exclude from version control
+└── tree.ipynb                 # Diagnostic notebook to print repo structure
 ```
 
 ## Research Foundation

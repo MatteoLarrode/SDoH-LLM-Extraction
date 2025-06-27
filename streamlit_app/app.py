@@ -9,11 +9,13 @@ from pathlib import Path
 # Add project root to path
 sys.path.append('.')
 
-# Import components
-from streamlit_components.config import configure_page, load_sidebar_config
-from streamlit_components.data_manager import DataManager
-from streamlit_components.model_manager import ModelManager
-from streamlit_components.tabs import (
+# Page config and sidebar setup
+from streamlit_app.config import configure_page, load_sidebar_config
+
+# Components from streamlit_app
+from streamlit_app.components.data_manager import DataManager
+from streamlit_app.components.model_manager import ModelManager
+from streamlit_app.components.tabs import (
     single_analysis_tab,
     dataset_browser_tab,
     batch_processing_tab,

@@ -4,8 +4,8 @@ import json
 import torch
 from typing import List, Dict, Any, Optional, Tuple
 from transformers import AutoTokenizer, AutoModel, AutoModelForCausalLM
-from utils.prompt_creation_helpers import create_automated_prompt
-from utils.data_cleaning_helpers import (
+from src.classification.prompt_creation_helpers import create_automated_prompt
+from src.data_cleaning.data_cleaning_helpers import (
     split_into_sentences
 )
 
