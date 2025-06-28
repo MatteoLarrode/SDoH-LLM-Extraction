@@ -12,7 +12,7 @@ from src.data_cleaning.data_cleaning_helpers import (
 class SDoHExtractor:
     """Main class for extracting Social Determinants of Health from referral notes"""
     
-    def __init__(self, model, tokenizer, prompt_type: str = "zero_shot_detailed", level: int = 1, max_length: int = 512, debug: bool = False):
+    def __init__(self, model, tokenizer, prompt_type: str = "five_shot_basic", max_length: int = 512, debug: bool = False):
         """
         Initialize the SDoH extractor
         
@@ -20,14 +20,12 @@ class SDoHExtractor:
             model: Loaded transformers model
             tokenizer: Loaded transformers tokenizer
             prompt_type: One of ["zero_shot_basic", "zero_shot_detailed", "five_shot_basic", "five_shot_detailed"]
-            level: 1 for basic categories, 2 for adverse/non-adverse classification
             max_length: Maximum length for model generation
             debug: Whether to include debugging information in results
         """
         self.model = model
         self.tokenizer = tokenizer
         self.prompt_type = prompt_type
-        self.level = level
         self.max_length = max_length
         self.debug = debug
         
@@ -35,10 +33,6 @@ class SDoHExtractor:
         valid_prompt_types = ["zero_shot_basic", "zero_shot_detailed", "five_shot_basic", "five_shot_detailed"]
         if prompt_type not in valid_prompt_types:
             raise ValueError(f"Invalid prompt_type. Must be one of {valid_prompt_types}")
-        
-        # Validate level
-        if level not in [1, 2]:
-            raise ValueError(f"Invalid level. Must be 1 or 2, got {level}")
     
     def preprocess_referral_note(self, note: str) -> List[str]:
         """
@@ -66,8 +60,7 @@ class SDoHExtractor:
         prompt = create_automated_prompt(
             sentence=sentence,
             tokenizer=self.tokenizer,
-            prompt_type=self.prompt_type,
-            level=self.level
+            prompt_type=self.prompt_type
         )
         
         # Get response from model
@@ -112,7 +105,6 @@ class SDoHExtractor:
         if self.debug:
             results["extraction_metadata"] = {
                 "prompt_type": self.prompt_type,
-                "level": self.level,
                 "max_length": self.max_length,
                 "model_name": getattr(self.tokenizer, 'name_or_path', 'unknown'),
                 "debug_enabled": self.debug

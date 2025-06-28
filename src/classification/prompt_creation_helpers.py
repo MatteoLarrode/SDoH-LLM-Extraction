@@ -5,8 +5,7 @@ from typing import List, Dict
 
 def create_automated_prompt(sentence: str, 
                           tokenizer=None, 
-                          prompt_type: str = "five_shot_basic",
-                          level: int = 1) -> str:
+                          prompt_type: str = "five_shot_basic") -> str:
     """
     Unified prompt generator that handles all combinations automatically
     
@@ -14,7 +13,6 @@ def create_automated_prompt(sentence: str,
         sentence: Input sentence to analyze
         tokenizer: Model tokenizer (for template detection)
         prompt_type: "zero_shot_basic", "zero_shot_detailed", "five_shot_basic", "five_shot_detailed"
-        level: 1 (basic classification) or 2 (adverse/protective classification)
     
     Returns:
         Properly formatted prompt for the specific model and configuration
@@ -22,72 +20,41 @@ def create_automated_prompt(sentence: str,
     
     # === STEP 1: Build the core task description ===
     
-    if level == 1:
-        # Basic SDoH classification
-        task_intro = "You are analyzing a referral note sentence to identify mentions of Social Determinants of Health (SDoH)."
-        
-        task_instructions = """Given a sentence, output all SDoH factors that can be inferred from that sentence from the following list: 
-EmploymentStatus, Housing, Transportation, ParentalStatus, RelationshipStatus, SocialSupport, SubstanceUse, FinancialSituation, EducationLevel, FoodInsecurity. 
-
-If the sentence does NOT mention any of the above categories, output <LIST>NoSDoH</LIST>.
-
-Your response must be a comma-separated list of SDoH factors embedded with <LIST> and </LIST>.
-
-**STRICT RULES**: 
-- DO NOT generate any other text, explanations, or new SDoH labels.
-- A sentence CAN be labeled with one or more SDoH factors.
-- Your response must ONLY contain the <LIST>...</LIST> format.
-- Do not continue or complete the input sentence."""
-
-        examples = """EXAMPLES:
-Input: "Person is unemployed and lives with his elderly mother."
-Output: <LIST>EmploymentStatus</LIST>
-
-Input: "She struggles to afford groceries and has no car to get to the store."
-Output: <LIST>FinancialSituation, Transportation, FoodInsecurity</LIST>
-
-Input: "Person smokes cigarettes and drinks alcohol daily."
-Output: <LIST>SubstanceUse</LIST>
-
-Input: "He has three young children at home and receives help from his sister."
-Output: <LIST>ParentalStatus, SocialSupport</LIST>
-
-Input: "Person was prescribed medication for diabetes."
-Output: <LIST>NoSDoH</LIST>"""
+    # Adverse/Protective classification
+    task_intro = "You are analyzing a referral note sentence to identify Social Determinants of Health, and classifying them as Adverse or Protective."
     
-    else:  # level 2
-        # Adverse/Protective classification
-        task_intro = "You are analyzing a referral note sentence to identify Social Determinants of Health, and classifying them as Adverse or Protective."
-        
-        task_instructions = """Given a sentence, output all SDoH factors that can be inferred from that sentence from the following list: 
-EmploymentStatus, Housing, Transportation, ParentalStatus, RelationshipStatus, SocialSupport, SubstanceUse, FinancialSituation, EducationLevel, FoodInsecurity. 
+    task_instructions = """Given a sentence, output all SDoH factors that can be inferred from that sentence from the following list: 
+Loneliness, Housing, Finances, FoodAccess, Digital, Employment, EnglishProficiency.
 
+Each SDoH must be classified as either "Adverse" or "Protective". 
 If the sentence does NOT mention any of the above categories, output <LIST>NoSDoH</LIST>.
 
-Your response must be a comma-separated list of SDoH factors embedded with <LIST> and </LIST>.
+Your response must be a comma-separated list of SDoH-Polarity pairs embedded in <LIST> and </LIST> tags.
 
 **STRICT RULES**:
-- For EVERY SDoH mention found, you MUST classify it as either "Adverse" or "Protective" after a hyphen
 - DO NOT generate any other text, explanations, or new SDoH labels.
 - A sentence CAN be labeled with one or more SDoH factors.
-- Your response must ONLY contain the <LIST>...</LIST> format.
-- Do not continue or complete the input sentence."""
+- The only accepted format is <LIST>...</LIST>."""
+    
+    examples = """EXAMPLES:
+Input: "She is unemployed and struggles to pay rent."
+Output: <LIST>Employment-Adverse, Finances-Adverse, Housing-Adverse</LIST>
 
-        examples = """EXAMPLES:
-Input: "Person is unemployed and lives with his elderly mother."
-Output: <LIST>EmploymentStatus-Adverse</LIST>
+Input: "We are referring the above patient to you today for befriending."
+Output: <LIST>Loneliness-Adverse</LIST>
 
-Input: "She struggles to afford groceries and has no car to get to the store."
-Output: <LIST>FinancialSituation-Adverse, Transportation-Adverse, FoodInsecurity-Adverse</LIST>
+Input: "She enjoys a strong network of friends and volunteers weekly."
+Output: <LIST>Loneliness-Protective</LIST>
 
-Input: "Person smokes cigarettes and drinks alcohol daily."
-Output: <LIST>SubstanceUse-Adverse</LIST>
+Input: "Sleeping at a friend's for now."
+Output: <LIST>Housing-Adverse</LIST>
 
-Input: "He has three young children at home and receives help from his sister."
-Output: <LIST>ParentalStatus-Adverse, SocialSupport-Protective</LIST>
+Input: "Cannot take public transport to do groceries."
+Output: <LIST>FoodAccess-Adverse</LIST>
 
-Input: "Person was prescribed medication for diabetes."
-Output: <LIST>NoSDoH</LIST>"""
+Input: "Daughter translates at GP visits."
+Output: <LIST>EnglishProficiency-Adverse</LIST>
+"""
     
     # === STEP 2: Add detailed guidelines if needed ===
     
@@ -96,25 +63,19 @@ Output: <LIST>NoSDoH</LIST>"""
         detailed_guidelines = """
 Below are detailed guidelines:
 
-EmploymentStatus: Annotate sentences that describe a person's work situation, including current employment, unemployment, retirement status, or disability affecting work capacity.
+Loneliness: Emotional or physical isolation, absence of social contact, lack of companionship. Excludes practical support needs unless clearly associated with emotional loneliness.
 
-Housing: Annotate sentences that describe housing conditions, stability, or problems including homelessness, temporary housing, housing quality, overcrowding, unsafe living conditions, housing affordability, eviction risk, or housing-related health hazards.
+Housing: Covers housing quality, stability, and suitability. Includes homelessness, unsafe or overcrowded housing, or housing not adapted to a person’s health needs.
 
-Transportation: Annotate sentences that describe difficulties accessing transportation, lack of reliable transportation, inability to travel for medical appointments, public transit limitations, vehicle problems, or mobility barriers that affect daily activities or healthcare access.
+Finances: Encompasses financial insecurity or security, inability to meet basic needs, debt, or adequate and stable income.
 
-ParentalStatus: Annotate sentences that indicate whether the person has children, has parental responsibilities, custody arrangements, child-rearing challenges, or family composition including dependents.
+FoodAccess: Describes access to and preparation of adequate nutrition. Includes lack of food, poor diet due to constraints, or reliable access to meals.
 
-RelationshipStatus: Annotate sentences that describe marital status (married, divorced, widowed, separated), partnership status (single, dating, cohabiting).
+Digital: Includes access to and ability to use digital devices or the internet, confidence using them, or support needed to engage digitally.
 
-SocialSupport: Annotate sentences that describe availability or absence of help from family, friends, or community including emotional support, practical assistance, social connections, isolation, loneliness.
+Employment: Refers to employment status and satisfaction. Includes unemployment, barriers to work, or fulfilling employment.
 
-SubstanceUse: Annotate sentences that mention current or past use of alcohol, illegal drugs, prescription drug misuse, tobacco products, smoking cessation attempts, substance abuse treatment, or substance-related health problems.
-
-FinancialSituation: Annotate sentences that describe economic hardship, income adequacy, debt problems, inability to afford necessities, or financial stress.
-
-EducationLevel: Annotate sentences that mention highest level of education completed, literacy skills, educational barriers, special education needs.
-
-FoodInsecurity: Annotate sentences that describe inadequate food access, hunger, reliance on food assistance programs, poor nutrition due to cost, skipping meals, food scarcity, or difficulty obtaining healthy foods."""
+EnglishProficiency: Captures English language proficiency. Includes limited English that hinders access to services, or confident communication."""
     
     # === STEP 3: Include examples based on shot type ===
     
@@ -226,8 +187,7 @@ Output: """
 # ================================================
 
 GUEVARA_SDOH = [
-    'EMPLOYMENT', 'HOUSING', 'PARENT', 
-    'RELATIONSHIP', 'SUPPORT', 'TRANSPORTATION'
+    'EMPLOYMENT', 'HOUSING', 'LONELINESS', 'FINANCES', 'FOOD', 'DIGITAL', 'ENGLISH'
 ]
 
 def create_guevara_prompt(sentence: str) -> str:
@@ -254,19 +214,16 @@ Given a sentence, output all relevant SDoH categories from the following list:
 - Do NOT include any extra text or explanations."""
 
     few_shot = """EXAMPLES:
-Input: "He lost his job during the pandemic and lives with a friend."
-Output: <LIST>EMPLOYMENT, HOUSING</LIST>
+Input: "He lost his job and can't afford groceries."
+Output: <LIST>EMPLOYMENT, FINANCES, FOOD</LIST>
 
-Input: "She relies on public buses but missed several medical appointments."
-Output: <LIST>TRANSPORTATION</LIST>
+Input: "She relies on her daughter to fill in online forms."
+Output: <LIST>DIGITAL</LIST>
 
-Input: "They are first-time parents with no family nearby."
-Output: <LIST>PARENT, SUPPORT</LIST>
+Input: "He lives alone and says he feels lonely most days."
+Output: <LIST>LONELINESS</LIST>
 
-Input: "She lives alone and has no close relationships."
-Output: <LIST>RELATIONSHIP, SUPPORT</LIST>
-
-Input: "Patient was diagnosed with asthma at age 9."
+Input: "Patient was prescribed medication for diabetes."
 Output: <LIST>NoSDoH</LIST>"""
 
     user_input = f'Input: "{sentence}"'
@@ -286,18 +243,18 @@ Output: <LIST>NoSDoH</LIST>"""
 
 # === Convenience functions for backward compatibility ===
 
-def create_zero_shot_basic_prompt(sentence: str, level: int = 1, tokenizer=None) -> str:
+def create_zero_shot_basic_prompt(sentence: str, tokenizer=None) -> str:
     """Backward compatible zero-shot basic prompt"""
-    return create_automated_prompt(sentence, tokenizer, "zero_shot_basic", level)
+    return create_automated_prompt(sentence, tokenizer, "zero_shot_basic")
 
-def create_zero_shot_detailed_prompt(sentence: str, level: int = 1, tokenizer=None) -> str:
+def create_zero_shot_detailed_prompt(sentence: str, tokenizer=None) -> str:
     """Backward compatible zero-shot detailed prompt"""
-    return create_automated_prompt(sentence, tokenizer, "zero_shot_detailed", level)
+    return create_automated_prompt(sentence, tokenizer, "zero_shot_detailed")
 
-def create_five_shot_basic_prompt(sentence: str, level: int = 1, tokenizer=None) -> str:
+def create_five_shot_basic_prompt(sentence: str, tokenizer=None) -> str:
     """Backward compatible five-shot basic prompt"""
-    return create_automated_prompt(sentence, tokenizer, "five_shot_basic", level)
+    return create_automated_prompt(sentence, tokenizer, "five_shot_basic")
 
-def create_five_shot_detailed_prompt(sentence: str, level: int = 1, tokenizer=None) -> str:
+def create_five_shot_detailed_prompt(sentence: str, tokenizer=None) -> str:
     """Backward compatible five-shot detailed prompt"""
-    return create_automated_prompt(sentence, tokenizer, "five_shot_detailed", level)
+    return create_automated_prompt(sentence, tokenizer, "five_shot_detailed")
