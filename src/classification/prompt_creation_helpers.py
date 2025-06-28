@@ -124,7 +124,7 @@ Output: """
     
     # Try native chat template first (works for most modern models)
     if hasattr(tokenizer, 'apply_chat_template'):
-        print(f"Using chat template for {model_name}")
+        #print(f"Using chat template for {model_name}")
         try:
             messages = [
                 {"role": "system", "content": system_content},
@@ -238,23 +238,3 @@ Output: <LIST>NoSDoH</LIST>"""
 {user_input}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
 
 """
-
-
-
-# === Convenience functions for backward compatibility ===
-
-def create_zero_shot_basic_prompt(sentence: str, tokenizer=None) -> str:
-    """Backward compatible zero-shot basic prompt"""
-    return create_automated_prompt(sentence, tokenizer, "zero_shot_basic")
-
-def create_zero_shot_detailed_prompt(sentence: str, tokenizer=None) -> str:
-    """Backward compatible zero-shot detailed prompt"""
-    return create_automated_prompt(sentence, tokenizer, "zero_shot_detailed")
-
-def create_five_shot_basic_prompt(sentence: str, tokenizer=None) -> str:
-    """Backward compatible five-shot basic prompt"""
-    return create_automated_prompt(sentence, tokenizer, "five_shot_basic")
-
-def create_five_shot_detailed_prompt(sentence: str, tokenizer=None) -> str:
-    """Backward compatible five-shot detailed prompt"""
-    return create_automated_prompt(sentence, tokenizer, "five_shot_detailed")

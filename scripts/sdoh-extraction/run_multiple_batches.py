@@ -16,7 +16,6 @@ PROMPTS = ["five_shot_basic", "five_shot_detailed"]
 BATCH_SIZE = 50
 START_INDEX = 0
 END_INDEX = 200
-LEVEL = 1
 
 def run_batch(model, prompt, start_idx, batch_size):
     """Run a single batch processing job"""
@@ -24,7 +23,6 @@ def run_batch(model, prompt, start_idx, batch_size):
         "python", "scripts/batch_process_notes.py",
         "--model_name", model,
         "--prompt_type", prompt,
-        "--level", str(LEVEL),
         "--batch_size", str(batch_size),
         "--start_index", str(start_idx),
         "--output_dir", "results/comparison_batch"

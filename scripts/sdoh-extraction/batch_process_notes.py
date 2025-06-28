@@ -5,7 +5,6 @@ Batch processing script for SDoH extraction with timing and memory monitoring
 Usage:
     python batch_process_notes.py --model_name "meta-llama/Llama-3.1-8B-Instruct" \
                                  --prompt_type "five_shot_basic" \
-                                 --level 1 \
                                  --batch_size 10 \
                                  --start_index 0 \
                                  --optimized
@@ -58,8 +57,6 @@ def main():
     parser.add_argument("--prompt_type", type=str, default="zero_shot_detailed",
                        choices=["zero_shot_basic", "zero_shot_detailed", "five_shot_basic", "five_shot_detailed"],
                        help="Type of prompt to use")
-    parser.add_argument("--level", type=int, default=1, choices=[1, 2],
-                       help="Classification level (1 or 2)")
     
     # Data arguments
     parser.add_argument("--data_path", type=str, default="data/processed/BRC_referrals_cleaned.csv",
@@ -106,7 +103,6 @@ def main():
             model=model,
             tokenizer=tokenizer,
             prompt_type=args.prompt_type,
-            level=args.level,
             debug=False
         )
         
@@ -145,7 +141,7 @@ def main():
         # Generate filename if not provided
         if args.output_filename is None:
             model_short = args.model_name.split('/')[-1].replace('-', '_')
-            filename = f"{model_short}_{args.prompt_type}_L{args.level}_{args.start_index}-{end_index}.csv"
+            filename = f"{model_short}_{args.prompt_type}_{args.start_index}-{end_index}.csv"
         else:
             filename = args.output_filename
         
@@ -162,7 +158,7 @@ def main():
                 
         # print(f"Processor type: {'OPTIMIZED' if args.optimized else 'STANDARD'}")
         print(f"Model: {args.model_name}")
-        print(f"Prompt: {args.prompt_type} (Level {args.level})")
+        print(f"Prompt: {args.prompt_type}")
         print(f"Notes processed: {results_df['case_reference'].nunique()}")
         print(f"Total sentences: {total_sentences}")
         print(f"Sentences with SDoH: {sentences_with_sdoh} ({sentences_with_sdoh/total_sentences:.2%})")
