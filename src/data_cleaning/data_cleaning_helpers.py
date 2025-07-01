@@ -504,3 +504,25 @@ def get_note_length_category(note):
         return 'Medium note (5-19 words)'
     else:
         return 'Long note (20+ words)'
+    
+def flag_snap_inconsistencies(df, perception_col, need_col, label):
+    """
+    Adds a column to df flagging mismatches between perception and need.
+    """
+    high_need_keywords = ["some", "often", "hungry", "high need"]
+    low_need_keywords = ["ideal", "adequate"]
+
+    def flag(row):
+        text = str(row[perception_col]).lower()
+        need = row[need_col]
+        
+        if any(kw in text for kw in low_need_keywords) and need == 1:
+            return "False Positive (Ideal/Adequate → Need)"
+        elif any(kw in text for kw in high_need_keywords) and need == 0:
+            return "False Negative (High Need → No Need)"
+        else:
+            return None
+
+    flag_col = f"{label}_need_flag"
+    df[flag_col] = df.apply(flag, axis=1)
+    return df
