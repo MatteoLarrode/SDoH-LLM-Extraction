@@ -117,10 +117,14 @@ def _apply_chat_template(system_content: str, user_content: str, tokenizer=None)
     """
     
     if tokenizer is None:
-        # Generic fallback format
-        return f"""{system_content}
-{user_content}
-Output: """
+        # Fallback to LLaMA-style manual template if tokenizer is not available
+        return f"""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
+
+{system_content}<|eot_id|><|start_header_id|>user<|end_header_id|>
+
+{user_content}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+
+"""
     
     # Get model name for detection
     model_name = getattr(tokenizer, 'name_or_path', 'unknown').lower()
