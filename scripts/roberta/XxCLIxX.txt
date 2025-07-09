@@ -1,0 +1,29 @@
+python scripts/roberta/train.py \
+  --model_name roberta-base \
+  --train_data_file data/processed/train-test/train_set.csv \
+  --val_data_file data/processed/train-test/val_set.csv \
+  --model_output_dir results/model_training/roberta_binary_sdoh \
+  --num_of_epochs 10 \
+  --per_device_train_batch_size 16 \
+  --per_device_eval_batch_size 16 \
+  --learning_rate 9e-5
+
+python scripts/roberta/train.py \
+  --model_name roberta-base \
+  --train_data_file data/processed/train-test/train_set.csv \
+  --val_data_file data/processed/train-test/val_set.csv \
+  --model_output_dir results/model_training/roberta_binary_sdoh \
+  --num_of_epochs 10 \
+  --per_device_train_batch_size 8 \
+  --per_device_eval_batch_size 8 \
+  --learning_rate 2e-5
+
+python scripts/roberta/eval.py \
+  --test_data_file data/processed/train-test/test_set.csv \
+  --model_dir results/model_training/roberta_binary_sdoh/roberta-base_bs16_lr9e-05_20250709_170452/checkpoint-24/ \
+  --pos_weight 1.5251
+
+python scripts/roberta/eval.py \
+  --test_data_file data/processed/train-test/test_set.csv \
+  --model_dir results/model_training/roberta_binary_sdoh/roberta-base_bs8_lr2e-05_20250709_173121/checkpoint-150 \
+  --pos_weight 1.5251
