@@ -3,100 +3,103 @@
 # ================================================
 from typing import List, Dict
 
-def create_automated_prompt(sentence: str, 
-                          tokenizer=None, 
-                          prompt_type: str = "five_shot_basic") -> str:
+
+from typing import List, Union
+
+def create_automated_prompt(sentence: str,
+                            labels: Union[str, List[str], int] = None,
+                            task_type: str = "sdoh_multilabel",
+                            tokenizer=None) -> str:
     """
-    Unified prompt generator that handles all combinations automatically
-    
+    Generate a prompt based on the sentence and task type.
+
     Args:
-        sentence: Input sentence to analyze
-        tokenizer: Model tokenizer (for template detection)
-        prompt_type: "zero_shot_basic", "zero_shot_detailed", "five_shot_basic", "five_shot_detailed"
-    
+        sentence: The input sentence to classify
+        labels: List of labels, or int (0/1) for binary task
+        task_type: One of ['sdoh_detection', 'sdoh_multilabel', 'sdoh_adverse_only', 'sdoh_polarity']
+        tokenizer: Optional tokenizer for applying chat template
+
     Returns:
-        Properly formatted prompt for the specific model and configuration
+        A formatted instruction-style prompt string
     """
-    
-    # === STEP 1: Build the core task description ===
-    
-    # Adverse/Protective classification
-    task_intro = "You are analyzing a referral note sentence to identify Social Determinants of Health, and classifying them as Adverse or Protective."
-    
-    task_instructions = """Given a sentence, output all SDoH factors that can be inferred from that sentence from the following list: 
-Loneliness, Housing, Finances, FoodAccess, Digital, Employment, EnglishProficiency.
 
-Each SDoH must be classified as either "Adverse" or "Protective". 
-If the sentence does NOT mention any of the above categories, output <LIST>NoSDoH</LIST>.
+    # ===== Instructions per task =====
+    if task_type == "sdoh_detection":
+        task_intro = "You are a helpful assistant identifying whether a sentence contains any Social Determinants of Health (SDoH)."
+        task_instructions = """
+Given a sentence, classify it as either containing at least one Social Determinant of Health (SDoH) or not.
 
-Your response must be a comma-separated list of SDoH-Polarity pairs embedded in <LIST> and </LIST> tags.
+Only consider the following SDoH categories:
+Loneliness, Housing, Finances, FoodAccess, DigitalInclusion, Employment, EnglishProficiency.
 
-**STRICT RULES**:
-- DO NOT generate any other text, explanations, or new SDoH labels.
-- A sentence CAN be labeled with one or more SDoH factors.
-- The only accepted format is <LIST>...</LIST>."""
-    
-    examples = """EXAMPLES:
+Respond with one of:
+<LIST>SDoH</LIST> — if the sentence contains any relevant SDoH from the list above.
+<LIST>NoSDoH</LIST> — if it does not.
+
+Do not add any other text or labels."""
+        examples = """EXAMPLES:
+Input: "He lost his job and can't afford groceries."
+Output: <LIST>SDoH</LIST>
+
+Input: "Patient was discharged home after treatment."
+Output: <LIST>NoSDoH</LIST>"""
+
+    elif task_type == "sdoh_multilabel":
+        task_intro = "You are analyzing a referral note to identify all mentioned Social Determinants of Health (SDoH), labeled as Adverse or Protective."
+        task_instructions = """
+Given a sentence, extract all relevant SDoH categories from this list:
+Loneliness, Housing, Finances, FoodAccess, DigitalInclusion, Employment, EnglishProficiency.
+
+Each must be labeled as Adverse or Protective. If none apply, output <LIST>NoSDoH</LIST>.
+
+Format your answer like: <LIST>Label1-Polarity, Label2-Polarity</LIST>
+Strictly avoid extra text."""
+        examples = """EXAMPLES:
 Input: "She is unemployed and struggles to pay rent."
 Output: <LIST>Employment-Adverse, Finances-Adverse, Housing-Adverse</LIST>
-
-Input: "We are referring the above patient to you today for befriending."
-Output: <LIST>Loneliness-Adverse</LIST>
 
 Input: "She enjoys a strong network of friends and volunteers weekly."
 Output: <LIST>Loneliness-Protective</LIST>
 
-Input: "Sleeping at a friend's for now."
-Output: <LIST>Housing-Adverse</LIST>
+Input: "Patient was discharged after surgery."
+Output: <LIST>NoSDoH</LIST>"""
 
-Input: "Cannot take public transport to do groceries."
-Output: <LIST>FoodAccess-Adverse</LIST>
+    elif task_type == "sdoh_adverse_only":
+        task_intro = "You are detecting only *Adverse* Social Determinants of Health (SDoH) in a referral sentence."
+        task_instructions = """
+Only extract SDoH that are labeled as Adverse from the following list:
+Loneliness, Housing, Finances, FoodAccess, DigitalInclusion, Employment, EnglishProficiency.
 
-Input: "Daughter translates at GP visits."
-Output: <LIST>EnglishProficiency-Adverse</LIST>
-"""
-    
-    # === STEP 2: Add detailed guidelines if needed ===
-    
-    detailed_guidelines = ""
-    if "detailed" in prompt_type:
-        detailed_guidelines = """
-Below are detailed guidelines:
+Format: <LIST>Label1-Adverse, Label2-Adverse</LIST>
+If there are none, output <LIST>NoSDoH</LIST>."""
+        examples = """EXAMPLES:
+Input: "He lives alone and says he feels lonely."
+Output: <LIST>Loneliness-Adverse</LIST>
 
-Loneliness: Emotional or physical isolation, absence of social contact, lack of companionship. Excludes practical support needs unless clearly associated with emotional loneliness.
+Input: "Patient has a reliable income and lives with his daughter."
+Output: <LIST>NoSDoH</LIST>"""
 
-Housing: Covers housing quality, stability, and suitability. Includes homelessness, unsafe or overcrowded housing, or housing not adapted to a person’s health needs.
+    elif task_type == "sdoh_polarity":
+        task_intro = "You are classifying whether the mentioned SDoH in a sentence are Adverse or Protective."
+        task_instructions = """
+Each SDoH mention should be labeled as either Adverse or Protective.
 
-Finances: Encompasses financial insecurity or security, inability to meet basic needs, debt, or adequate and stable income.
+Format your answer as: <LIST>Label1-Polarity</LIST>
+Only include labels that appear in the sentence."""
+        examples = """EXAMPLES:
+Input: "She feels lonely and isolated."
+Output: <LIST>Loneliness-Adverse</LIST>
 
-FoodAccess: Describes access to and preparation of adequate nutrition. Includes lack of food, poor diet due to constraints, or reliable access to meals.
+Input: "He has strong family support and daily social visits."
+Output: <LIST>Loneliness-Protective</LIST>"""
 
-Digital: Includes access to and ability to use digital devices or the internet, confidence using them, or support needed to engage digitally.
+    else:
+        raise ValueError(f"Unsupported task_type: {task_type}")
 
-Employment: Refers to employment status and satisfaction. Includes unemployment, barriers to work, or fulfilling employment.
-
-EnglishProficiency: Captures English language proficiency. Includes limited English that hinders access to services, or confident communication."""
-    
-    # === STEP 3: Include examples based on shot type ===
-    
-    examples_section = ""
-    if "five_shot" in prompt_type:
-        examples_section = examples
-    elif "zero_shot" in prompt_type:
-        examples_section = ""  # No examples for zero-shot
-    
-    # === STEP 4: Build the system message ===
-    
-    system_content = f"""{task_intro}
-
-{task_instructions}{detailed_guidelines}
-
-{examples_section}""".strip()
-    
+    # ==== Final formatting ====
+    system_content = f"{task_intro}\n\n{task_instructions}\n\n{examples}".strip()
     user_content = f'Input: "{sentence}"'
-    
-    # === STEP 5: Apply model-specific formatting ===
-    
+
     return _apply_chat_template(system_content, user_content, tokenizer)
 
 
@@ -180,61 +183,3 @@ Output: """
 
 {user_content}
 Output: """
-
-
-# ================================================
-# Prompt generator for GUEVARA SDoH labels
-# ================================================
-
-GUEVARA_SDOH = [
-    'EMPLOYMENT', 'HOUSING', 'LONELINESS', 'FINANCES', 'FOOD', 'DIGITAL', 'ENGLISH'
-]
-
-def create_guevara_prompt(sentence: str) -> str:
-    """
-    Create an instruction prompt for LLaMA 3.1 to classify a sentence
-    using only the GUEVARA SDoH label set.
-    
-    Args:
-        sentence: Input sentence (single sentence)
-    
-    Returns:
-        Formatted prompt string with instruction and few-shot examples
-    """
-    
-    label_list = ", ".join(GUEVARA_SDOH)
-
-    instructions = f"""You are a helpful assistant trained to identify mentions of Social Determinants of Health (SDoH).
-
-Given a sentence, output all relevant SDoH categories from the following list:
-{label_list}.
-
-- Use a comma-separated list embedded inside <LIST> and </LIST> tags.
-- If none apply, output <LIST>NoSDoH</LIST>.
-- Do NOT include any extra text or explanations."""
-
-    few_shot = """EXAMPLES:
-Input: "He lost his job and can't afford groceries."
-Output: <LIST>EMPLOYMENT, FINANCES, FOOD</LIST>
-
-Input: "She relies on her daughter to fill in online forms."
-Output: <LIST>DIGITAL</LIST>
-
-Input: "He lives alone and says he feels lonely most days."
-Output: <LIST>LONELINESS</LIST>
-
-Input: "Patient was prescribed medication for diabetes."
-Output: <LIST>NoSDoH</LIST>"""
-
-    user_input = f'Input: "{sentence}"'
-
-    # === Format in LLaMA 3 chat template style ===
-    return f"""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-
-{instructions}
-
-{few_shot}<|eot_id|><|start_header_id|>user<|end_header_id|>
-
-{user_input}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
-
-"""

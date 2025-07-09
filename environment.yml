@@ -25,6 +25,10 @@ dependencies:
   - pyyaml
   - tqdm
   - streamlit
+  - unsloth
+  - trl
+  - accelerate
+  - bitsandbytes
   - pip
   - pip:
     - sentence-transformers
