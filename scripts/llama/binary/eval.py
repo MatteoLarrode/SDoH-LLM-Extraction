@@ -8,6 +8,7 @@ from sklearn.metrics import classification_report
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[3]))
+
 from scripts.llama.shared_utils.model import load_lora_llama
 from scripts.llama.binary.prepare_dataset import prepare_binary_dataset_infer
 
@@ -50,7 +51,7 @@ def main(args):
 
     # Generate predictions
     predictions = []
-    for prompt in tqdm(test_df["text"], desc="Generating predictions"):
+    for prompt in tqdm(test_df["prompt"], desc="Generating predictions"):
         output = generate_response(prompt, model, tokenizer)
         prediction = extract_list_output(output)
         predictions.append(prediction)
@@ -68,7 +69,7 @@ def main(args):
 
     # Save results
     results_path = os.path.join(args.model_dir, "eval_predictions.csv")
-    test_df[["Sentence", "text", "completion", "generated_completion"]].to_csv(results_path, index=False)
+    test_df[["Sentence", "completion", "generated_completion"]].to_csv(results_path, index=False)
     print(f"\n✅ Predictions saved to {results_path}")
 
 if __name__ == "__main__":

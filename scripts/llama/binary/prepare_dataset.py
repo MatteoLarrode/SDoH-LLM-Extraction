@@ -24,5 +24,5 @@ def prepare_binary_dataset_infer(csv_path, prompt_builder=build_sdoh_detection_p
 
     binary_label = lambda c: "<LIST>NoSDoH</LIST>" if "NoSDoH" in c else "<LIST>SDoH</LIST>"
     df["completion"] = df["completion"].map(binary_label)
-    df["text"] = df["Sentence"].apply(lambda s: prompt_builder(s))
+    df["prompt"] = df["Sentence"].apply(lambda s: prompt_builder(s))
     return df
