@@ -11,27 +11,41 @@ bnb_config = BitsAndBytesConfig(
     bnb_4bit_compute_dtype=torch.float16,
 )
 
-def load_lora_llama(base_model_path: str, cache_dir: str = None, device: int = 0):
-    # Load the base model with 4-bit quantization
+def load_lora_llama(
+    base_model_path: str,
+    adapter_path: str = None,
+    cache_dir: str = None,
+    device: int = 0
+):
+    tokenizer = AutoTokenizer.from_pretrained(
+        base_model_path,
+        cache_dir=cache_dir
+    )
+    tokenizer.pad_token = tokenizer.eos_token
+
     base_model = AutoModelForCausalLM.from_pretrained(
         base_model_path,
         cache_dir=cache_dir,
         quantization_config=bnb_config,
-        device_map={"": 0},
+        device_map={"": device},
         trust_remote_code=True,
     )
 
-    # Define LoRA configuration
-    lora_config = LoraConfig(
-        r=8,
-        lora_alpha=16,
-        target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
-        lora_dropout=0.0,
-        bias="none",
-        task_type=TaskType.CAUSAL_LM,
-    )
+    if adapter_path is not None:
+        from peft import PeftModel
+        model = PeftModel.from_pretrained(base_model, adapter_path)
+    else:
+        # Define LoRA configuration for training
+        lora_config = LoraConfig(
+            r=8,
+            lora_alpha=16,
+            target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
+            lora_dropout=0.0,
+            bias="none",
+            task_type=TaskType.CAUSAL_LM,
+        )
+        model = get_peft_model(base_model, lora_config)
+        model.print_trainable_parameters()
 
-    # Apply LoRA to the base model
-    model = get_peft_model(base_model, lora_config)
-    model.print_trainable_parameters()
-    return model
+    model.eval()
+    return model, tokenizer

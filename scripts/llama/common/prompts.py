@@ -43,6 +43,47 @@ def build_sdoh_detection_prompt(sentence: str, label: str) -> str:
 
 {label}"""
 
+def build_sdoh_detection_prompt_infer(sentence: str) -> str:
+    """
+    Construct a LLaMA-Instruct formatted prompt for binary SDoH detection,
+    including both Protective and Adverse Social Determinants of Health.
+
+    Args:
+        sentence (str): Input sentence to classify.
+        label (str): Target label, either "<LIST>SDoH</LIST>" or "<LIST>NoSDoH</LIST>"
+
+    Returns:
+        str: A formatted LLaMA-Instruct prompt for classification.
+    """
+
+    system_content = (
+        "You are a helpful assistant identifying whether a sentence contains any Social Determinants of Health (SDoH).\n\n"
+        "Given a sentence, classify it as either containing at least one Social Determinant of Health (SDoH) or not.\n\n"
+        "Only consider the following SDoH categories:\n"
+        "Loneliness, Housing, Finances, FoodAccess, DigitalInclusion, Employment, EnglishProficiency.\n\n"
+        "These determinants may be Protective (e.g., helpful social support) or Adverse (e.g., financial struggles).\n\n"
+        "Respond with one of:\n"
+        "<LIST>SDoH</LIST> — if the sentence contains any relevant SDoH from the list above.\n"
+        "<LIST>NoSDoH</LIST> — if it does not.\n\n"
+        "Do not add any other text or labels.\n\n"
+        "EXAMPLES:\n"
+        "Input: \"He lost his job and can't afford groceries.\"\n"
+        "Output: <LIST>SDoH</LIST>\n\n"
+        "Input: \"She regularly receives help from her community center.\"\n"
+        "Output: <LIST>SDoH</LIST>\n\n"
+        "Input: \"Patient was discharged home after treatment.\"\n"
+        "Output: <LIST>NoSDoH</LIST>\n"
+    )
+
+    user_content = f'Input: "{sentence}"'
+
+    return f"""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
+
+{system_content}<|eot_id|><|start_header_id|>user<|end_header_id|>
+
+{user_content}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+"""
+
 # Task: Multi-label 1 — classify *any* SDoH (protective or adverse) or NoSDoH
 def build_sdoh_multilabel_present_or_not_prompt(sentence: str, label: str) -> str:
     """

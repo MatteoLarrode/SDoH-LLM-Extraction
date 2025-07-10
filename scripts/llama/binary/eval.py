@@ -4,11 +4,12 @@ import torch
 import pandas as pd
 from tqdm import tqdm
 from sklearn.metrics import classification_report
-from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
-from peft import PeftModel
-from utils.prompting import create_automated_prompt
+
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parents[3]))
 from scripts.llama.common.model import load_lora_llama
-from scripts.llama.common.prepare_dataset import prepare_binary_dataset
+from scripts.llama.binary.prepare_dataset import prepare_binary_dataset_infer
 
 def extract_list_output(output_text):
     start = output_text.find("<LIST>")
@@ -37,15 +38,17 @@ def generate_response(prompt, model, tokenizer, max_new_tokens=64):
 
 def main(args):
     model, tokenizer = load_lora_llama(
-        base_model_name_or_path=args.model_dir,
+        base_model_path=args.model_dir,
         adapter_path=args.model_dir
     )
 
-    test_df = prepare_binary_dataset(args.test_data_file, split="test", tokenizer=None)
+    test_df = prepare_binary_dataset_infer(args.test_data_file)
+    if getattr(args, "head", False):
+        test_df = test_df.head(10)
 
     # Generate predictions
     predictions = []
-    for prompt in tqdm(test_df["prompt"], desc="Generating predictions"):
+    for prompt in tqdm(test_df["text"], desc="Generating predictions"):
         output = generate_response(prompt, model, tokenizer)
         prediction = extract_list_output(output)
         predictions.append(prediction)
@@ -63,12 +66,13 @@ def main(args):
 
     # Save results
     results_path = os.path.join(args.model_dir, "eval_predictions.csv")
-    test_df[["Sentence", "completion", "generated_completion"]].to_csv(results_path, index=False)
+    test_df[["Sentence", "text", "completion", "generated_completion"]].to_csv(results_path, index=False)
     print(f"\n✅ Predictions saved to {results_path}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--test_data_file", type=str, required=True)
     parser.add_argument("--model_dir", type=str, required=True)
+    parser.add_argument("--head", action="store_true", help="Evaluate only on the first 10 rows")
     args = parser.parse_args()
     main(args)

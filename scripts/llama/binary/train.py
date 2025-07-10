@@ -34,7 +34,7 @@ def main(args):
     print("✅ Tokenizer loaded and pad token set.")
 
     # Load model with LoRA
-    model = load_lora_llama(
+    model, _ = load_lora_llama(
         args.model_name,
         cache_dir=args.cache_dir,
         device=0,

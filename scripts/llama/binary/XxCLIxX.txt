@@ -5,3 +5,12 @@ python scripts/llama/binary/train.py \
   --per_device_train_batch_size 4 \
   --per_device_eval_batch_size 4 \
   --num_train_epochs 6
+
+python scripts/llama/binary/eval.py \
+  --test_data_file data/processed/train-test/test_set.csv \
+  --model_dir results/model_training/llama_lora_binary_sdoh/Llama-3.1-8B-Instruct_bs4_lr5e-05_epochs6_20250710_005523
+
+python scripts/llama/binary/eval.py \
+  --test_data_file data/processed/train-test/test_set.csv \
+  --model_dir results/model_training/llama_lora_binary_sdoh/Llama-3.1-8B-Instruct_bs4_lr5e-05_epochs6_20250710_005523 \
+  --head
