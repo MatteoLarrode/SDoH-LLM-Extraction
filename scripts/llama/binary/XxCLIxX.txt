@@ -1,0 +1,7 @@
+python scripts/llama/binary/train.py \
+  --train_data_file data/processed/train-test/train_set.csv \
+  --val_data_file data/processed/train-test/val_set.csv \
+  --learning_rate 5e-5 \
+  --per_device_train_batch_size 4 \
+  --per_device_eval_batch_size 4 \
+  --num_train_epochs 6
