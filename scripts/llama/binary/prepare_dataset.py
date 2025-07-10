@@ -7,7 +7,7 @@ import sys
 project_root = Path(__file__).resolve().parents[3]
 sys.path.append(str(project_root))
 
-from scripts.llama.common.prompts import build_sdoh_detection_prompt, build_sdoh_detection_prompt_infer
+from scripts.llama.shared_utils.prompts import build_sdoh_detection_prompt, build_sdoh_detection_prompt_infer
 
 def prepare_binary_dataset(csv_path, prompt_builder=build_sdoh_detection_prompt):
     df = pd.read_csv(csv_path)

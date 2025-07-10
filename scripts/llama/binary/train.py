@@ -17,7 +17,7 @@ from transformers import (
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[3]))
-from scripts.llama.common.model import load_lora_llama
+from scripts.llama.shared_utils.model import load_lora_llama
 from scripts.llama.binary.prepare_dataset import prepare_binary_dataset
 
 def main(args):
