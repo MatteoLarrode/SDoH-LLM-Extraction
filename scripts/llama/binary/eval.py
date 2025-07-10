@@ -38,8 +38,10 @@ def generate_response(prompt, model, tokenizer, max_new_tokens=64):
 
 def main(args):
     model, tokenizer = load_lora_llama(
-        base_model_path=args.model_dir,
-        adapter_path=args.model_dir
+        base_model_path="meta-llama/Llama-3.1-8B-Instruct",
+        adapter_path=args.model_dir,
+        cache_dir="/data/resource/huggingface/hub",
+        device=0
     )
 
     test_df = prepare_binary_dataset_infer(args.test_data_file)
