@@ -7,7 +7,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 
 import sys
 from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parents[3]))
+sys.path.append(str(Path(__file__).resolve().parents[4]))
 
 from scripts.llama.binary.prepare_dataset import prepare_binary_dataset_infer
 from scripts.llama.shared_utils.prompts import build_sdoh_detection_prompt_infer
@@ -15,7 +15,7 @@ from scripts.llama.shared_utils.prompts import build_sdoh_detection_prompt_infer
 # Constants
 LLAMA_MODEL_NAME = "meta-llama/Llama-3.1-8B-Instruct"
 CACHE_DIR = "/data/resource/huggingface/hub"
-RESULTS_PATH = "scripts/llama/few_shot/few_shot_eval_predictions.csv"
+RESULTS_PATH = "results/model_training/llama_lora_binary_sdoh/few_shot_eval_predictions.csv"
 
 # Extract <LIST>...</LIST>
 def extract_list_output(output_text):

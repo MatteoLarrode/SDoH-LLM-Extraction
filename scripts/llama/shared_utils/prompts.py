@@ -1,6 +1,8 @@
 from typing import List
 
-# Task: Binary classification — does the sentence contain *any* SDoH (protective or adverse) or not?
+# ======================
+#  === Task: Binary classification — does the sentence contain *any* SDoH (protective or adverse) or not?
+# ======================
 def build_sdoh_detection_prompt(sentence: str, label: str) -> str:
     """
     Construct a LLaMA-Instruct formatted prompt for binary SDoH detection,
@@ -43,6 +45,7 @@ def build_sdoh_detection_prompt(sentence: str, label: str) -> str:
 
 {label}"""
 
+# Inference version of the prompt
 def build_sdoh_detection_prompt_infer(sentence: str) -> str:
     """
     Construct a LLaMA-Instruct formatted prompt for binary SDoH detection,
@@ -84,7 +87,9 @@ def build_sdoh_detection_prompt_infer(sentence: str) -> str:
 {user_content}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
 """
 
+# ======================
 # Task: Multi-label 1 — classify *any* SDoH (protective or adverse) or NoSDoH
+# ======================
 def build_sdoh_multilabel_present_or_not_prompt(sentence: str, label: str) -> str:
     """
     Construct a LLaMA-Instruct prompt for identifying whether the sentence contains *any* SDoH (of any polarity),
@@ -121,8 +126,45 @@ def build_sdoh_multilabel_present_or_not_prompt(sentence: str, label: str) -> st
 
 {label}"""
 
+# Inference version of the prompt
+def build_sdoh_multilabel_present_or_not_prompt_infer(sentence: str) -> str:
+    """
+    Construct a LLaMA-Instruct prompt for identifying whether the sentence contains *any* SDoH (of any polarity),
+    or none at all.
+    """
+    system_content = (
+        "You are identifying whether a sentence contains any Social Determinants of Health (SDoH).\n\n"
+        "If it contains one or more SDoH from the following list, return them with their polarity (Adverse or Protective):\n"
+        "Loneliness, Housing, Finances, FoodAccess, DigitalInclusion, Employment, EnglishProficiency.\n\n"
+        "If none apply, return <LIST>NoSDoH</LIST>\n"
+        "Format: <LIST>Label1-Polarity, Label2-Polarity</LIST>\n\n"
+        "EXAMPLES:\n"
+        "Input: \"She has difficulty finding a job but gets help online.\"\n"
+        "Output: <LIST>Employment-Adverse, DigitalInclusion-Protective</LIST>\n\n"
+        "Input: \"He lives with family and is financially secure.\"\n"
+        "Output: <LIST>Loneliness-Protective, Finances-Protective</LIST>\n\n"
+        "Input: \"He was discharged from the hospital.\"\n"
+        "Output: <LIST>NoSDoH</LIST>\n\n"
+        "Input: \"She cannot pay for her food and is isolated.\"\n"
+        "Output: <LIST>FoodAccess-Adverse, Loneliness-Adverse</LIST>\n\n"
+        "Input: \"They live in temporary housing and rely on benefits.\"\n"
+        "Output: <LIST>Housing-Adverse, Finances-Adverse</LIST>\n\n"
+        "Input: \"He is unemployed and his English is limited.\"\n"
+        "Output: <LIST>Employment-Adverse, EnglishProficiency-Adverse</LIST>"
+    )
 
+    user_content = f'Input: "{sentence}"'
+
+    return f"""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
+
+{system_content}<|eot_id|><|start_header_id|>user<|end_header_id|>
+
+{user_content}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+"""
+
+# ======================
 # Task: Multi-label 2 — classify sentence as containing adverse SDoH(s) or not (output: labels or NoSDoH)
+# ======================
 def build_sdoh_adverse_only_prompt(sentence: str, label: str) -> str:
     """
     Construct a LLaMA-Instruct formatted prompt for extracting *only* Adverse SDoH.
@@ -160,7 +202,9 @@ def build_sdoh_adverse_only_prompt(sentence: str, label: str) -> str:
 
 {label}"""
 
+# ======================
 # Task: Multi-label 3 — classify SDoH from a sentence assumed to contain at least one SDoH (any polarity)
+# ======================
 def build_sdoh_from_sentence_prompt(sentence: str, label: str) -> str:
     """
     Construct a prompt assuming the sentence contains at least one SDoH (any polarity).
@@ -198,7 +242,9 @@ def build_sdoh_from_sentence_prompt(sentence: str, label: str) -> str:
 
 {label}"""
 
+# ======================
 # Task: Multi-label 4 — classify only adverse SDoH from a sentence assumed to contain at least one SDoH
+# ======================
 def build_sdoh_adverse_only_from_sentence_prompt(sentence: str, label: str) -> str:
     """
     Construct a prompt assuming the sentence contains at least one SDoH, but only extract Adverse ones.
