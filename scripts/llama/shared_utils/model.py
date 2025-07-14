@@ -21,6 +21,11 @@ def load_lora_llama(base_model_path: str, adapter_path: str = None, cache_dir: s
         trust_remote_code=True,
     )
 
+    # For disabling warnings.
+    base_model.generation_config.temperature=None
+    base_model.generation_config.top_p=None
+    base_model.generation_config.top_k=None
+
     tokenizer = AutoTokenizer.from_pretrained(base_model_path, cache_dir=cache_dir, use_fast=True)
     tokenizer.pad_token = tokenizer.eos_token
 

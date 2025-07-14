@@ -97,23 +97,27 @@ def build_sdoh_multilabel_present_or_not_prompt(sentence: str, label: str) -> st
     """
     system_content = (
         "You are identifying whether a sentence contains any Social Determinants of Health (SDoH).\n\n"
-        "If it contains one or more SDoH from the following list, return them with their polarity (Adverse or Protective):\n"
+        "If it contains one or more SDoH from the following list, return them:\n"
         "Loneliness, Housing, Finances, FoodAccess, DigitalInclusion, Employment, EnglishProficiency.\n\n"
         "If none apply, return <LIST>NoSDoH</LIST>\n"
-        "Format: <LIST>Label1-Polarity, Label2-Polarity</LIST>\n\n"
+        "Format: <LIST>Label1, Label2</LIST>\n\n"
         "EXAMPLES:\n"
-        "Input: \"She has difficulty finding a job but gets help online.\"\n"
-        "Output: <LIST>Employment-Adverse, DigitalInclusion-Protective</LIST>\n\n"
-        "Input: \"He lives with family and is financially secure.\"\n"
-        "Output: <LIST>Loneliness-Protective, Finances-Protective</LIST>\n\n"
-        "Input: \"He was discharged from the hospital.\"\n"
+        "Input: \"She only eats toast and skips meals.\"\n"
+        "Output: <LIST>FoodAccess</LIST>\n\n"
+        "Input: \"He lives alone and struggles with money.\"\n"
+        "Output: <LIST>Finances</LIST>\n\n"
+        "Input: \"He lives on his own.\"\n"
         "Output: <LIST>NoSDoH</LIST>\n\n"
         "Input: \"She cannot pay for her food and is isolated.\"\n"
-        "Output: <LIST>FoodAccess-Adverse, Loneliness-Adverse</LIST>\n\n"
-        "Input: \"They live in temporary housing and rely on benefits.\"\n"
-        "Output: <LIST>Housing-Adverse, Finances-Adverse</LIST>\n\n"
-        "Input: \"He is unemployed and his English is limited.\"\n"
-        "Output: <LIST>Employment-Adverse, EnglishProficiency-Adverse</LIST>"
+        "Output: <LIST>FoodAccess, Finances, Loneliness</LIST>\n\n"
+        "Input: \"They are sleeping at a friend's for now.\"\n"
+        "Output: <LIST>Housing</LIST>\n\n"
+        "Input: \"Owns a smartphone but doesn't know how to use it.\"\n"
+        "Output: <LIST>DigitalInclusion</LIST>\n\n"
+        "Input: \"She is unemployed and speaks limited English.\"\n"
+        "Output: <LIST>Employment, EnglishProficiency</LIST>\n\n"
+        "Input: \"Patient was discharged from hospital.\"\n"
+        "Output: <LIST>NoSDoH</LIST>"
     )
 
     user_content = f'Input: "{sentence}"'
@@ -134,23 +138,27 @@ def build_sdoh_multilabel_present_or_not_prompt_infer(sentence: str) -> str:
     """
     system_content = (
         "You are identifying whether a sentence contains any Social Determinants of Health (SDoH).\n\n"
-        "If it contains one or more SDoH from the following list, return them with their polarity (Adverse or Protective):\n"
+        "If it contains one or more SDoH from the following list, return them:\n"
         "Loneliness, Housing, Finances, FoodAccess, DigitalInclusion, Employment, EnglishProficiency.\n\n"
         "If none apply, return <LIST>NoSDoH</LIST>\n"
-        "Format: <LIST>Label1-Polarity, Label2-Polarity</LIST>\n\n"
+        "Format: <LIST>Label1, Label2</LIST>\n\n"
         "EXAMPLES:\n"
-        "Input: \"She has difficulty finding a job but gets help online.\"\n"
-        "Output: <LIST>Employment-Adverse, DigitalInclusion-Protective</LIST>\n\n"
-        "Input: \"He lives with family and is financially secure.\"\n"
-        "Output: <LIST>Loneliness-Protective, Finances-Protective</LIST>\n\n"
-        "Input: \"He was discharged from the hospital.\"\n"
+        "Input: \"She only eats toast and skips meals.\"\n"
+        "Output: <LIST>FoodAccess</LIST>\n\n"
+        "Input: \"He lives alone and struggles with money.\"\n"
+        "Output: <LIST>Finances</LIST>\n\n"
+        "Input: \"He lives on his own.\"\n"
         "Output: <LIST>NoSDoH</LIST>\n\n"
         "Input: \"She cannot pay for her food and is isolated.\"\n"
-        "Output: <LIST>FoodAccess-Adverse, Loneliness-Adverse</LIST>\n\n"
-        "Input: \"They live in temporary housing and rely on benefits.\"\n"
-        "Output: <LIST>Housing-Adverse, Finances-Adverse</LIST>\n\n"
-        "Input: \"He is unemployed and his English is limited.\"\n"
-        "Output: <LIST>Employment-Adverse, EnglishProficiency-Adverse</LIST>"
+        "Output: <LIST>FoodAccess, Finances, Loneliness</LIST>\n\n"
+        "Input: \"They are sleeping at a friend's for now.\"\n"
+        "Output: <LIST>Housing</LIST>\n\n"
+        "Input: \"Owns a smartphone but doesn't know how to use it.\"\n"
+        "Output: <LIST>DigitalInclusion</LIST>\n\n"
+        "Input: \"She is unemployed and speaks limited English.\"\n"
+        "Output: <LIST>Employment, EnglishProficiency</LIST>\n\n"
+        "Input: \"Patient was discharged from hospital.\"\n"
+        "Output: <LIST>NoSDoH</LIST>"
     )
 
     user_content = f'Input: "{sentence}"'
@@ -178,18 +186,24 @@ def build_sdoh_adverse_only_prompt(sentence: str, label: str) -> str:
         "Format: <LIST>Label1-Adverse, Label2-Adverse</LIST>\n\n"
         "Do not include any protective determinants.\n\n"
         "EXAMPLES:\n"
-        "Input: \"She can't afford rent and feels isolated.\"\n"
-        "Output: <LIST>Finances-Adverse, Loneliness-Adverse</LIST>\n\n"
-        "Input: \"Patient has internet access and receives unemployment benefits.\"\n"
-        "Output: <LIST>Employment-Adverse</LIST>\n\n"
-        "Input: \"He volunteers twice a week and lives with his family.\"\n"
-        "Output: <LIST>NoSDoH</LIST>\n\n"
-        "Input: \"He can't use a smartphone and doesn't speak English.\"\n"
-        "Output: <LIST>DigitalInclusion-Adverse, EnglishProficiency-Adverse</LIST>\n\n"
-        "Input: \"Her home was recently condemned.\"\n"
+        "Input: \"She only eats toast and skips meals.\"\n"
+        "Output: <LIST>FoodAccess-Adverse</LIST>\n\n"
+        "Input: \"He lives alone and struggles with money.\"\n"
+        "Output: <LIST>Finances-Adverse</LIST>\n\n"
+        "Input: \"She cannot pay for her food and is isolated.\"\n"
+        "Output: <LIST>FoodAccess-Adverse, Finances-Adverse, Loneliness-Adverse</LIST>\n\n"
+        "Input: \"They are sleeping at a friend's for now.\"\n"
         "Output: <LIST>Housing-Adverse</LIST>\n\n"
-        "Input: \"He is lonely despite living with a roommate.\"\n"
-        "Output: <LIST>Loneliness-Adverse</LIST>"
+        "Input: \"Owns a smartphone but doesn't know how to use it.\"\n"
+        "Output: <LIST>DigitalInclusion-Adverse</LIST>\n\n"
+        "Input: \"She is unemployed and speaks limited English.\"\n"
+        "Output: <LIST>Employment-Adverse, EnglishProficiency-Adverse</LIST>\n\n"
+        "Input: \"She gets meals delivered daily and volunteers locally.\"\n"
+        "Output: <LIST>NoSDoH</LIST>\n\n"
+        "Input: \"He uses his tablet independently and enjoys weekly clubs.\"\n"
+        "Output: <LIST>NoSDoH</LIST>\n\n"
+        "Input: \"Patient was discharged from hospital.\"\n"
+        "Output: <LIST>NoSDoH</LIST>"
     )
 
     user_content = f'Input: "{sentence}"'
@@ -201,6 +215,48 @@ def build_sdoh_adverse_only_prompt(sentence: str, label: str) -> str:
 {user_content}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
 
 {label}"""
+
+def build_sdoh_adverse_only_prompt_infer(sentence: str) -> str:
+    """
+    Construct a LLaMA-Instruct formatted prompt for extracting *only* Adverse SDoH.
+    """
+
+    system_content = (
+        "You are identifying *adverse* Social Determinants of Health (SDoH) from a sentence.\n\n"
+        "Only extract SDoH that are Adverse from the following list:\n"
+        "Loneliness, Housing, Finances, FoodAccess, DigitalInclusion, Employment, EnglishProficiency.\n\n"
+        "If none apply, return <LIST>NoSDoH</LIST>\n"
+        "Format: <LIST>Label1-Adverse, Label2-Adverse</LIST>\n\n"
+        "Do not include any protective determinants.\n\n"
+        "EXAMPLES:\n"
+        "Input: \"She only eats toast and skips meals.\"\n"
+        "Output: <LIST>FoodAccess-Adverse</LIST>\n\n"
+        "Input: \"He lives alone and struggles with money.\"\n"
+        "Output: <LIST>Finances-Adverse</LIST>\n\n"
+        "Input: \"She cannot pay for her food and is isolated.\"\n"
+        "Output: <LIST>FoodAccess-Adverse, Finances-Adverse, Loneliness-Adverse</LIST>\n\n"
+        "Input: \"They are sleeping at a friend's for now.\"\n"
+        "Output: <LIST>Housing-Adverse</LIST>\n\n"
+        "Input: \"Owns a smartphone but doesn't know how to use it.\"\n"
+        "Output: <LIST>DigitalInclusion-Adverse</LIST>\n\n"
+        "Input: \"She is unemployed and speaks limited English.\"\n"
+        "Output: <LIST>Employment-Adverse, EnglishProficiency-Adverse</LIST>\n\n"
+        "Input: \"She gets meals delivered daily and volunteers locally.\"\n"
+        "Output: <LIST>NoSDoH</LIST>\n\n"
+        "Input: \"He uses his tablet independently and enjoys weekly clubs.\"\n"
+        "Output: <LIST>NoSDoH</LIST>\n\n"
+        "Input: \"Patient was discharged from hospital.\"\n"
+        "Output: <LIST>NoSDoH</LIST>"
+    )
+
+    user_content = f'Input: "{sentence}"'
+
+    return f"""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
+
+{system_content}<|eot_id|><|start_header_id|>user<|end_header_id|>
+
+{user_content}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+"""
 
 # ======================
 # Task: Multi-label 3 — classify SDoH from a sentence assumed to contain at least one SDoH (any polarity)

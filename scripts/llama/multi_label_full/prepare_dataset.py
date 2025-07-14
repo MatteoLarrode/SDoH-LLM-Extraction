@@ -9,10 +9,7 @@ sys.path.append(str(project_root))
 
 from scripts.llama.shared_utils.prompts import build_sdoh_multilabel_present_or_not_prompt, build_sdoh_multilabel_present_or_not_prompt_infer
 
-def prepare_multilabel_dataset(csv_path, prompt_builder=build_sdoh_multilabel_present_or_not_prompt):
-    df = pd.read_csv(csv_path)
-
-    def strip_polarity(label_string):
+def strip_polarity(label_string):
         # Input: "<LIST>Label1-Adverse, Label2-Protective</LIST>"
         # Output: "<LIST>Label1, Label2</LIST>"
         if label_string.startswith("<LIST>") and label_string.endswith("</LIST>"):
@@ -20,6 +17,9 @@ def prepare_multilabel_dataset(csv_path, prompt_builder=build_sdoh_multilabel_pr
             labels = [l.strip().split("-")[0] for l in label_content.split(",")]
             return f"<LIST>{', '.join(labels)}</LIST>"
         return label_string
+
+def prepare_multilabel_dataset(csv_path, prompt_builder=build_sdoh_multilabel_present_or_not_prompt):
+    df = pd.read_csv(csv_path)
 
     df["completion"] = df["completion"].apply(strip_polarity)
     df["text"] = df.apply(lambda row: prompt_builder(row["Sentence"], row["completion"]), axis=1)
@@ -30,5 +30,6 @@ def prepare_multilabel_dataset(csv_path, prompt_builder=build_sdoh_multilabel_pr
 def prepare_multilabel_dataset_infer(csv_path, prompt_builder=build_sdoh_multilabel_present_or_not_prompt_infer):
     df = pd.read_csv(csv_path)
 
+    df["completion"] = df["completion"].apply(strip_polarity)
     df["prompt"] = df["Sentence"].apply(lambda s: prompt_builder(s))
     return df
