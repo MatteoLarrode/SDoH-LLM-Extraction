@@ -1,0 +1,16 @@
+python scripts/llama/multi_label_full_adverse/train.py \
+  --train_data_file data/processed/train-test/train_set.csv \
+  --val_data_file data/processed/train-test/val_set.csv \
+  --learning_rate 9e-5 \
+  --per_device_train_batch_size 8 \
+  --per_device_eval_batch_size 8 \
+  --num_train_epochs 6
+
+python scripts/llama/multi_label_full_adverse/eval.py \
+  --test_data_file data/processed/train-test/test_set.csv \
+  --model_dir results/model_training/llama_lora_multi_label_full_adverse/Llama-3.1-8B-Instruct_bs8_lr9e-05_epochs6_20250717_201311 \
+  --head
+
+python scripts/llama/multi_label_full_adverse/eval.py \
+  --test_data_file data/processed/train-test/test_set.csv \
+  --model_dir results/model_training/llama_lora_multi_label_full_adverse/Llama-3.1-8B-Instruct_bs8_lr9e-05_epochs6_20250717_201311

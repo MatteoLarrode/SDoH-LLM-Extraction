@@ -65,6 +65,11 @@ def main():
     )
     model.eval()
 
+    # For disabling warnings.
+    model.generation_config.temperature=None
+    model.generation_config.top_p=None
+    model.generation_config.top_k=None
+
     # Load test data and create prompts
     test_df = prepare_binary_dataset_infer("data/processed/train-test/test_set.csv")
 

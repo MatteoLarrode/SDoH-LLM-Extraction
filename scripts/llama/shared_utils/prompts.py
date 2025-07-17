@@ -1,8 +1,8 @@
 from typing import List
 
-# ======================
+# ===========================================================================================================
 #  === Task: Binary classification — does the sentence contain *any* SDoH (protective or adverse) or not?
-# ======================
+# ===========================================================================================================
 def build_sdoh_detection_prompt(sentence: str, label: str) -> str:
     """
     Construct a LLaMA-Instruct formatted prompt for binary SDoH detection,
@@ -87,9 +87,9 @@ def build_sdoh_detection_prompt_infer(sentence: str) -> str:
 {user_content}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
 """
 
-# ======================
+# ===============================================================================
 # Task: Multi-label 1 — classify *any* SDoH (protective or adverse) or NoSDoH
-# ======================
+# ===============================================================================
 def build_sdoh_multilabel_present_or_not_prompt(sentence: str, label: str) -> str:
     """
     Construct a LLaMA-Instruct prompt for identifying whether the sentence contains *any* SDoH (of any polarity),
@@ -170,9 +170,9 @@ def build_sdoh_multilabel_present_or_not_prompt_infer(sentence: str) -> str:
 {user_content}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
 """
 
-# ======================
+# ===========================================================================================================
 # Task: Multi-label 2 — classify sentence as containing adverse SDoH(s) or not (output: labels or NoSDoH)
-# ======================
+# ===========================================================================================================
 def build_sdoh_adverse_only_prompt(sentence: str, label: str) -> str:
     """
     Construct a LLaMA-Instruct formatted prompt for extracting *only* Adverse SDoH.
@@ -216,6 +216,7 @@ def build_sdoh_adverse_only_prompt(sentence: str, label: str) -> str:
 
 {label}"""
 
+# Inference version of the prompt
 def build_sdoh_adverse_only_prompt_infer(sentence: str) -> str:
     """
     Construct a LLaMA-Instruct formatted prompt for extracting *only* Adverse SDoH.

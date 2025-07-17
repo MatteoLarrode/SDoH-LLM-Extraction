@@ -6,16 +6,18 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 from sklearn.metrics import classification_report
 from sklearn.preprocessing import MultiLabelBinarizer
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"  # Use nvtop Device 1 (A100)
+
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[4]))
 
-from scripts.llama.multi_label_full.prepare_dataset import prepare_multilabel_dataset_infer
+from scripts.llama.multi_label_full_adverse.prepare_dataset import prepare_adverse_only_dataset_infer
 
 # Constants
 LLAMA_MODEL_NAME = "meta-llama/Llama-3.1-8B-Instruct"
 CACHE_DIR = "/data/resource/huggingface/hub"
-RESULTS_PATH = "results/model_training/llama_lora_multi_label_full/few_shot_eval_predictions.csv"
+RESULTS_PATH = "results/model_training/llama_lora_multi_label_full_adverse/few_shot_eval_predictions.csv"
 
 def extract_list_output(output_text):
     start = output_text.find("<LIST>")
@@ -61,6 +63,7 @@ def main():
         device_map={"": 0},
         trust_remote_code=True,
     )
+
     model.eval()
 
     # For disabling warnings.
@@ -69,7 +72,7 @@ def main():
     model.generation_config.top_k=None
 
     # Load test set and prompts
-    test_df = prepare_multilabel_dataset_infer("data/processed/train-test/test_set.csv")
+    test_df = prepare_adverse_only_dataset_infer("data/processed/train-test/test_set.csv")
 
     # Generate predictions
     predictions = []
