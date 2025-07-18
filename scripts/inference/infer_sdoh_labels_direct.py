@@ -4,6 +4,8 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"  # Use nvtop Device 1 (A100)
+
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[2]))

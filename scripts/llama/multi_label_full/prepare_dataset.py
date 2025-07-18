@@ -27,8 +27,13 @@ def prepare_multilabel_dataset(csv_path, prompt_builder=build_sdoh_multilabel_pr
     dataset = Dataset.from_pandas(df[["text", "completion"]])
     return dataset
 
-def prepare_multilabel_dataset_infer(csv_path, prompt_builder=build_sdoh_multilabel_present_or_not_prompt_infer):
-    df = pd.read_csv(csv_path)
+def prepare_multilabel_dataset_infer(data, prompt_builder=build_sdoh_multilabel_present_or_not_prompt_infer):
+    if isinstance(data, str):
+        df = pd.read_csv(data)
+    elif isinstance(data, pd.DataFrame):
+        df = data.copy()
+    else:
+        raise ValueError("Expected a file path or DataFrame.")
 
     df["completion"] = df["completion"].apply(strip_polarity)
     df["prompt"] = df["Sentence"].apply(lambda s: prompt_builder(s))
