@@ -1,0 +1,5 @@
+python scripts/multistep/eval.py \
+  --test_data_file data/processed/train-test/test_set.csv \
+  --roberta_model_dir results/model_training/roberta_binary/roberta-base_bs16_lr9e-05_20250709_170452/checkpoint-24 \
+  --llama_model_dir results/model_training/llama_multilabel_direct/Llama-3.1-8B-Instruct_bs8_lr9e-05_epochs6_20250710_164937 \
+  --pos_weight 1.5251

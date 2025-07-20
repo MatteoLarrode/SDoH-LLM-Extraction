@@ -1,4 +1,4 @@
-python scripts/llama/multi_label_full/train.py \
+python scripts/llama/multilabel_direct/train.py \
   --train_data_file data/processed/train-test/train_set.csv \
   --val_data_file data/processed/train-test/val_set.csv \
   --learning_rate 9e-5 \
@@ -8,9 +8,9 @@ python scripts/llama/multi_label_full/train.py \
 
 python scripts/llama/multi_label_full/eval.py \
   --test_data_file data/processed/train-test/test_set.csv \
-  --model_dir results/model_training/llama_lora_multi_label_full/Llama-3.1-8B-Instruct_bs8_lr9e-05_epochs6_20250710_164937 \
+  --model_dir results/model_training/llama_multilabel_direct/Llama-3.1-8B-Instruct_bs8_lr9e-05_epochs6_20250710_164937 \
   --head
 
 python scripts/llama/multi_label_full/eval.py \
   --test_data_file data/processed/train-test/test_set.csv \
-  --model_dir results/model_training/llama_lora_multi_label_full/Llama-3.1-8B-Instruct_bs8_lr9e-05_epochs6_20250710_164937
+  --model_dir results/model_training/llama_multilabel_direct/Llama-3.1-8B-Instruct_bs8_lr9e-05_epochs6_20250710_164937

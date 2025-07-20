@@ -20,13 +20,13 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[3]))
 
 from scripts.llama.shared_utils.model import load_lora_llama
-from scripts.llama.multi_label_full.prepare_dataset import prepare_multilabel_dataset
+from scripts.llama.multilabel_direct.prepare_dataset import prepare_multilabel_dataset
 
 def main(args):
     # Format output directory
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_dir_name = f"{args.model_name.split('/')[-1]}_bs{args.per_device_train_batch_size}_lr{args.learning_rate}_epochs{args.num_train_epochs}_{timestamp}"
-    model_output_dir = os.path.join("results/model_training/llama_lora_multi_label_full", output_dir_name)
+    model_output_dir = os.path.join("results/model_training/llama_multilabel_direct", output_dir_name)
     os.makedirs(model_output_dir, exist_ok=True)
     print(f"📁 Model output directory: {model_output_dir}")
 
@@ -79,7 +79,7 @@ def main(args):
         load_best_model_at_end=True,
         bf16=True,
         report_to=[],
-        run_name="llama3_lora_multilabel_full_sdoh"
+        run_name="llama3_lora_multilabel_direct_sdoh"
     )
 
     # Data collator
@@ -111,7 +111,7 @@ if __name__ == "__main__":
     parser.add_argument("--train_data_file", type=str, required=True)
     parser.add_argument("--val_data_file", type=str, required=True)
     parser.add_argument("--cache_dir", type=str, default="/data/resource/huggingface/hub")
-    parser.add_argument("--model_output_base", type=str, default="results/model_training/llama_lora_multi_label_full")
+    parser.add_argument("--model_output_base", type=str, default="results/model_training/llama_multilabel_direct")
     parser.add_argument("--learning_rate", type=float, default=5e-5)
     parser.add_argument("--num_train_epochs", type=int, default=6)
     parser.add_argument("--per_device_train_batch_size", type=int, default=8)

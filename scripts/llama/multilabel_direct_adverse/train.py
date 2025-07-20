@@ -20,13 +20,13 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[3]))
 
 from scripts.llama.shared_utils.model import load_lora_llama
-from scripts.llama.binary.prepare_dataset import prepare_binary_dataset
+from scripts.llama.multilabel_direct_adverse.prepare_dataset import prepare_adverse_only_dataset
 
 def main(args):
     # Format output directory
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_dir_name = f"{args.model_name.split('/')[-1]}_bs{args.per_device_train_batch_size}_lr{args.learning_rate}_epochs{args.num_train_epochs}_{timestamp}"
-    model_output_dir = os.path.join(args.model_output_base, output_dir_name)
+    model_output_dir = os.path.join("results/model_training/llama_multilabel_direct_adverse", output_dir_name)
     os.makedirs(model_output_dir, exist_ok=True)
     print(f"📁 Model output directory: {model_output_dir}")
 
@@ -44,8 +44,8 @@ def main(args):
     print("✅ LoRA model loaded.")
 
     # Load and preprocess datasets
-    train_dataset = prepare_binary_dataset(args.train_data_file)
-    val_dataset = prepare_binary_dataset(args.val_data_file)
+    train_dataset = prepare_adverse_only_dataset(args.train_data_file)
+    val_dataset = prepare_adverse_only_dataset(args.val_data_file)
     print(f"📊 Train set size: {len(train_dataset)}")
     print(f"Train set label counts: {Counter(train_dataset['completion'])}")
     print(f"📊 Validation set size: {len(val_dataset)}")
@@ -79,7 +79,7 @@ def main(args):
         load_best_model_at_end=True,
         bf16=True,
         report_to=[],
-        run_name="llama3_lora_binary_sdoh"
+        run_name="llama3_lora_multilabel_adverse_sdoh"
     )
 
     # Data collator
@@ -106,12 +106,12 @@ def main(args):
     print(f"✅ Model saved to {model_output_dir}")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Fine-tune LLaMA-8b-Instruct for binary SDoH classification.")
+    parser = argparse.ArgumentParser(description="Fine-tune LLaMA-8b-Instruct for multi-label *adverse-only* SDoH classification.")
     parser.add_argument("--model_name", type=str, default="meta-llama/Llama-3.1-8B-Instruct")
     parser.add_argument("--train_data_file", type=str, required=True)
     parser.add_argument("--val_data_file", type=str, required=True)
     parser.add_argument("--cache_dir", type=str, default="/data/resource/huggingface/hub")
-    parser.add_argument("--model_output_base", type=str, default="results/model_training/llama_lora_binary_sdoh")
+    parser.add_argument("--model_output_base", type=str, default="results/model_training/llama_multilabel_direct_adverse")
     parser.add_argument("--learning_rate", type=float, default=5e-5)
     parser.add_argument("--num_train_epochs", type=int, default=6)
     parser.add_argument("--per_device_train_batch_size", type=int, default=8)

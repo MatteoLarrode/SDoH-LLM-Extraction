@@ -12,7 +12,7 @@ from scripts.roberta.dataset import BinarySDoHDataset, is_sdoh_label
 from scripts.roberta.model import RobertaBinaryClassifierWithWeight
 
 from scripts.llama.shared_utils.model import load_lora_llama
-from scripts.llama.multi_label_full.prepare_dataset import prepare_multilabel_dataset_infer, strip_polarity
+from scripts.llama.multilabel_direct.prepare_dataset import prepare_multilabel_dataset_infer, strip_polarity
 
 def run_roberta_binary_inference(test_data_file: str, model_dir: str, pos_weight: float):
     # Load test data

@@ -8,7 +8,8 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-from scripts.multistep_full.two_step_pipeline import run_two_step_pipeline
+from scripts.multistep.two_step_pipeline import run_two_step_pipeline
+from scripts.llama.shared_utils.eval_report import evaluate_multilabel_predictions
 
 def parse_labels(list_string):
     try:
@@ -20,7 +21,7 @@ def parse_labels(list_string):
         return []
 
 def main(args):
-    output_dir = "results/model_training/twostep_multi_label_full"
+    output_dir = "results/model_training/twostep_multilabel"
     os.makedirs(output_dir, exist_ok=True)
     output_file = os.path.join(output_dir, "two_step_predictions.csv")
 
@@ -39,12 +40,7 @@ def main(args):
     y_true = df["completion"].apply(parse_labels)
     y_pred = df["final_prediction"].apply(parse_labels)
 
-    mlb = MultiLabelBinarizer()
-    y_true_bin = mlb.fit_transform(y_true)
-    y_pred_bin = mlb.transform(y_pred)
-
-    print("\n📊 Multi-label Classification Report:\n")
-    print(classification_report(y_true_bin, y_pred_bin, target_names=mlb.classes_))
+    evaluate_multilabel_predictions(y_true, y_pred, output_dir)
 
     df[["Sentence", "completion", "final_prediction"]].to_csv(
         os.path.join(output_dir, "eval_predictions.csv"), index=False

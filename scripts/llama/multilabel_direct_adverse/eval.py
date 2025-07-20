@@ -6,12 +6,14 @@ from tqdm import tqdm
 from sklearn.metrics import classification_report
 from sklearn.preprocessing import MultiLabelBinarizer
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"  # Use nvtop Device 1 (A100)
+
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[3]))
 
 from scripts.llama.shared_utils.model import load_lora_llama
-from scripts.llama.multi_label_full.prepare_dataset import prepare_multilabel_dataset_infer
+from scripts.llama.multilabel_direct_adverse.prepare_dataset import prepare_adverse_only_dataset_infer
 from scripts.llama.shared_utils.eval_report import evaluate_multilabel_predictions
 
 def extract_list_output(output_text):
@@ -56,7 +58,7 @@ def main(args):
         device=0
     )
 
-    test_df = prepare_multilabel_dataset_infer(args.test_data_file)
+    test_df = prepare_adverse_only_dataset_infer(args.test_data_file)
     if getattr(args, "head", False):
         test_df = test_df.head(10)
 
