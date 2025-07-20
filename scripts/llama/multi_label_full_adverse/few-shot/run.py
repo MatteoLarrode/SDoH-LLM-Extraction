@@ -13,6 +13,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[4]))
 
 from scripts.llama.multi_label_full_adverse.prepare_dataset import prepare_adverse_only_dataset_infer
+from scripts.llama.shared_utils.eval_report import evaluate_multilabel_predictions
 
 # Constants
 LLAMA_MODEL_NAME = "meta-llama/Llama-3.1-8B-Instruct"
@@ -66,11 +67,6 @@ def main():
 
     model.eval()
 
-    # For disabling warnings.
-    model.generation_config.temperature=None
-    model.generation_config.top_p=None
-    model.generation_config.top_k=None
-
     # Load test set and prompts
     test_df = prepare_adverse_only_dataset_infer("data/processed/train-test/test_set.csv")
 
@@ -99,12 +95,7 @@ def main():
     y_true = test_df["completion"].apply(extract_labels)
     y_pred = test_df["generated_completion"].apply(extract_labels)
 
-    mlb = MultiLabelBinarizer()
-    y_true_bin = mlb.fit_transform(y_true)
-    y_pred_bin = mlb.transform(y_pred)
-
-    print("📊 Few-Shot Classification Report:\n")
-    print(classification_report(y_true_bin, y_pred_bin, target_names=mlb.classes_))
+    evaluate_multilabel_predictions(y_true, y_pred, os.path.dirname(RESULTS_PATH))
 
     test_df[["Sentence", "prompt", "completion", "generated_completion"]].to_csv(RESULTS_PATH, index=False)
     print(f"\n✅ Few-shot predictions saved to {RESULTS_PATH}")

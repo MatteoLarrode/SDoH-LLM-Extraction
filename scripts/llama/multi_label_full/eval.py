@@ -12,6 +12,7 @@ sys.path.append(str(Path(__file__).resolve().parents[3]))
 
 from scripts.llama.shared_utils.model import load_lora_llama
 from scripts.llama.multi_label_full.prepare_dataset import prepare_multilabel_dataset_infer
+from scripts.llama.shared_utils.eval_report import evaluate_multilabel_predictions
 
 def extract_list_output(output_text):
     start = output_text.find("<LIST>")
@@ -72,12 +73,7 @@ def main(args):
     y_pred = test_df["generated_completion"].apply(parse_labels)
 
     # Evaluation
-    mlb = MultiLabelBinarizer()
-    y_true_bin = mlb.fit_transform(y_true)
-    y_pred_bin = mlb.transform(y_pred)
-
-    print("\n📊 Multi-label Classification Report:\n")
-    print(classification_report(y_true_bin, y_pred_bin, target_names=mlb.classes_))
+    evaluate_multilabel_predictions(y_true, y_pred, args.model_dir)
 
     # Save results
     results_path = os.path.join(args.model_dir, "eval_predictions.csv")
