@@ -16,7 +16,7 @@ from scripts.llama.shared_utils.eval_report import evaluate_multilabel_predictio
 # Constants
 LLAMA_MODEL_NAME = "meta-llama/Llama-3.1-8B-Instruct"
 CACHE_DIR = "/data/resource/huggingface/hub"
-RESULTS_PATH = "results/model_training/llama_multilabel_direct/few_shot_eval_predictions.csv"
+RESULTS_PATH = "results/model_training/llama_multilabel_direct/few-shot/few_shot_eval_predictions.csv"
 
 def extract_list_output(output_text):
     start = output_text.find("<LIST>")

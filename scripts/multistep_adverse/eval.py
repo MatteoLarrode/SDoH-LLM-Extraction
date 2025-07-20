@@ -9,7 +9,7 @@ from pathlib import Path
 from datetime import datetime
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-from scripts.multistep.two_step_pipeline import run_two_step_pipeline
+from scripts.multistep_adverse.two_step_pipeline import run_two_step_pipeline
 from scripts.llama.shared_utils.eval_report import evaluate_multilabel_predictions
 
 def parse_labels(list_string):
@@ -23,7 +23,7 @@ def parse_labels(list_string):
 
 def main(args):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_dir = os.path.join("results", "model_training", "twostep_multilabel",f"twostep_{timestamp}")
+    output_dir = os.path.join("results", "model_training", "twostep_multilabel", f"twostep_adverse_{timestamp}")
     os.makedirs(output_dir, exist_ok=True)
     log_file = os.path.join(output_dir, "run_metadata.txt")
     with open(log_file, "w") as f:
