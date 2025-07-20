@@ -6,6 +6,7 @@ from sklearn.preprocessing import MultiLabelBinarizer
 
 import sys
 from pathlib import Path
+from datetime import datetime
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from scripts.multistep.two_step_pipeline import run_two_step_pipeline
@@ -21,8 +22,15 @@ def parse_labels(list_string):
         return []
 
 def main(args):
-    output_dir = "results/model_training/twostep_multilabel"
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_dir = os.path.join("results", "model_training", f"twostep_multilabel_{timestamp}")
     os.makedirs(output_dir, exist_ok=True)
+    log_file = os.path.join(output_dir, "run_metadata.txt")
+    with open(log_file, "w") as f:
+        f.write(f"Date and Time: {timestamp}\n")
+        f.write(f"RoBERTa Model Dir: {args.roberta_model_dir}\n")
+        f.write(f"LLaMA Model Dir: {args.llama_model_dir}\n")
+
     output_file = os.path.join(output_dir, "two_step_predictions.csv")
 
     run_two_step_pipeline(
