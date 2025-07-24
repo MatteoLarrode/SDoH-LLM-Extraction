@@ -166,7 +166,7 @@ def plot_exhaustiveness_bar_faceted(df_long, save_path="../results/figures/notes
             palette=label_color_map,
             ax=ax,
             alpha=0.8,
-            width=0.6
+            width=0.7
         )
 
         ax.set_title(f"Documentation in {dataset} referral notes", fontsize=14)
@@ -192,74 +192,131 @@ def plot_exhaustiveness_bar_faceted(df_long, save_path="../results/figures/notes
     plt.savefig(save_path, dpi=300, bbox_inches="tight")
     plt.show()
 
-def plot_note_recall_by_sdoh(df_long, save_path="../results/figures/note_recall_by_sdoh.png"):
+def plot_note_recall_stacked_bar(df_long, save_path="../results/figures/note_recall_stacked_bar_horizontal.png"):
     """
-    Plot recall of referral notes in documenting experienced SDoH needs.
-    Recall = proportion of experienced needs that are documented in the note.
+    Horizontal stacked barplot of experienced SDoH needs, split by whether the need was documented
+    in the referral note. Bar length = # experienced; split = documented / not documented.
 
     Parameters:
     - df_long: Long-format DataFrame with 'structured_experienced', 'free_text_documented',
                'sdoh_category', and 'dataset' columns.
-    - save_path: Path to save the figure.
+    - save_path: File path to save the figure.
     """
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-
-    # Filter to experienced needs only
+    # Filter to experienced needs
     df_exp = df_long[df_long["structured_experienced"] == True].copy()
     df_exp = df_exp[~((df_exp["dataset"] == "HIU") & (df_exp["sdoh_category"] == "foodaccess"))]
 
-    # Compute recall per SDoH per dataset
-    grouped = df_exp.groupby(["dataset", "sdoh_category"])
-    recall_df = grouped["free_text_documented"].mean().reset_index()
-    recall_df["Recall (%)"] = recall_df["free_text_documented"] * 100
+    # Count by documented status
+    counts = (
+        df_exp
+        .groupby(["dataset", "sdoh_category", "free_text_documented"])
+        .size()
+        .reset_index(name="count")
+    )
 
-    # Label mapping for display
+    # Pivot to wide format
+    counts_wide = counts.pivot_table(
+        index=["dataset", "sdoh_category"],
+        columns="free_text_documented",
+        values="count",
+        fill_value=0
+    ).reset_index()
+
+    # Rename columns
+    counts_wide = counts_wide.rename(columns={
+        True: "Documented",
+        False: "Not Documented"
+    })
+
+    # Map SDoH labels
     label_map = {
         "housing": "Housing",
         "finances": "Finances",
         "loneliness": "Loneliness",
         "foodaccess": "Food Access"
     }
-    recall_df["SDoH Category"] = recall_df["sdoh_category"].map(label_map)
+    counts_wide["SDoH Category"] = counts_wide["sdoh_category"].map(label_map)
 
-    # Define color palette (only purple and red used here)
+    # Calculate recall (%)
+    counts_wide["Total"] = counts_wide["Documented"] + counts_wide["Not Documented"]
+    counts_wide["Recall"] = counts_wide["Documented"] / counts_wide["Total"] * 100
+
+    # Set up horizontal bar chart
+    sns.set_style("ticks")
+    datasets = counts_wide["dataset"].unique()
+    fig, axes = plt.subplots(len(datasets), 1, figsize=(10, 6), sharex=False)
+
+    if len(datasets) == 1:
+        axes = [axes]
+
     bar_colors = {
-        True: colour_palette["medium_purple"],
-        False: colour_palette["ifrc_red"]
+        "Documented": colour_palette["medium_purple"],
+        "Not Documented": colour_palette["ifrc_red"]
     }
 
-    # Plot
-    sns.set_style("ticks")
-    g = sns.catplot(
-        data=recall_df,
-        kind="bar",
-        x="SDoH Category",
-        y="Recall (%)",
-        col="dataset",
-        palette=[colour_palette["medium_purple"]],
-        height=6,
-        aspect=0.8
+    for i, dataset in enumerate(datasets):
+        ax = axes[i]
+        df_subset = counts_wide[counts_wide["dataset"] == dataset].copy()
+
+        y_labels = df_subset["SDoH Category"]
+        nd = df_subset["Not Documented"]
+        d = df_subset["Documented"]
+        total = df_subset["Total"]
+
+        # Base bar (Not Documented)
+        ax.barh(
+            y=y_labels,
+            width=nd,
+            label="Not Documented",
+            color=bar_colors["Not Documented"],
+            alpha=0.7,
+            height=0.5
+        )
+
+        # Stacked bar (Documented)
+        ax.barh(
+            y=y_labels,
+            width=d,
+            left=nd,
+            label="Documented",
+            color=bar_colors["Documented"],
+            alpha=0.7,
+            height=0.5
+        )
+
+        # Annotate recall % properly
+        for y_pos, row in enumerate(df_subset.itertuples()):
+            total_val = row.Documented + row._3  # _3 = Not Documented (column 3)
+            recall_pct = row.Recall
+            ax.text(
+                x=total_val + max(1, 0.02 * total_val),
+                y=y_pos,
+                s=f"{recall_pct:.0f}%",
+                va="center",
+                ha="left",
+                fontsize=11
+            )
+
+        ax.set_title(f"{dataset} referrals", fontsize=14)
+        ax.set_ylabel("", fontsize=12)
+        ax.set_xlabel("Number of service users experiencing need", fontsize=12)
+        ax.tick_params(axis='y', labelsize=11)
+        ax.tick_params(axis='x', labelsize=11)
+
+        sns.despine(ax=ax)
+
+    # Legend below
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(
+        handles, labels,
+        title="",
+        loc="lower center",
+        bbox_to_anchor=(0.5, -0.08),
+        ncol=2,
+        frameon=False,
+        fontsize=11
     )
 
-    for ax in g.axes.flat:
-        for bar in ax.patches:
-            height = bar.get_height()
-            ax.text(
-                bar.get_x() + bar.get_width() / 2,
-                height + 1,
-                f"{height:.1f}%",
-                ha="center",
-                va="bottom",
-                fontsize=10
-            )
-        ax.set_ylim(0, 100)
-        ax.set_ylabel("Recall of referral notes (%)", fontsize=12)
-        ax.set_xlabel("SDoH Category", fontsize=12)
-        ax.tick_params(axis='x', labelrotation=0, labelsize=11)
-        ax.tick_params(axis='y', labelsize=11)
-        ax.set_title(ax.get_title().replace("dataset = ", ""), fontsize=14)
-
-    plt.tight_layout()
+    fig.subplots_adjust(hspace=0.6)
     plt.savefig(save_path, dpi=300, bbox_inches="tight")
     plt.show()
