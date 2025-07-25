@@ -3,10 +3,10 @@ import torch.nn as nn
 from transformers import RobertaModel, RobertaPreTrainedModel
 
 class RobertaBinaryClassifierWithWeight(RobertaPreTrainedModel):
-    def __init__(self, config, pos_weight):
+    def __init__(self, config, pos_weight, dropout=0.3):
         super().__init__(config)
         self.roberta = RobertaModel(config)
-        self.dropout = nn.Dropout(0.3)
+        self.dropout = nn.Dropout(dropout)
         self.classifier = nn.Linear(config.hidden_size, 1)
         self.loss_fct = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([pos_weight]))
         self.init_weights()

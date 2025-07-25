@@ -37,8 +37,8 @@ def main(args):
 
     # Tokenizer
     tokenizer = RobertaTokenizer.from_pretrained(args.model_name, cache_dir=args.cache_dir, local_files_only=True)
-    train_dataset = BinarySDoHDataset(train_df, tokenizer)
-    val_dataset = BinarySDoHDataset(val_df, tokenizer)
+    train_dataset = BinarySDoHDataset(train_df, tokenizer, max_length=args.max_length)
+    val_dataset = BinarySDoHDataset(val_df, tokenizer, max_length=args.max_length)
 
     sample = train_dataset[0]
     print("[DEBUG] Sample tokenized input keys:", sample.keys())
@@ -50,7 +50,7 @@ def main(args):
 
     # Model
     config = RobertaConfig.from_pretrained(args.model_name, cache_dir=args.cache_dir, local_files_only=True)
-    model = RobertaBinaryClassifierWithWeight(config, pos_weight=pos_weight_val)
+    model = RobertaBinaryClassifierWithWeight(config, pos_weight=pos_weight_val, dropout=args.dropout)
     model.roberta = model.roberta.from_pretrained(args.model_name, cache_dir=args.cache_dir, local_files_only=True)
 
     # Roberta Base has 12 layers, freeze bottom layers as specified
@@ -120,5 +120,8 @@ if __name__ == "__main__":
     parser.add_argument("--max_length", type=int, default=64, help="Maximum sequence length")
     parser.add_argument("--cache_dir", type=str, default="/data/resource/huggingface/hub", help="HuggingFace model cache directory")
     parser.add_argument("--run_name", type=str, default=None, help="Custom name for this run (optional)")
+    parser.add_argument("--dropout", type=float, default=0.3, help="Dropout rate for classification head")
+    parser.add_argument("--seed", type=int, default=42, help="Random seed")
     args = parser.parse_args()
+    torch.manual_seed(args.seed)
     main(args)
