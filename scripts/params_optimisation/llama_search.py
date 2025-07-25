@@ -40,8 +40,7 @@ search_space = {
     "lora_alpha": [16, 32, 64, 128],
     "lora_dropout": [0.0, 0.1],
     "learning_rate": [3e-5, 5e-5, 7e-5, 1e-4, 2e-4, 3e-4],
-    #"per_device_train_batch_size": [4, 8],
-    "per_device_train_batch_size": [8],
+    "per_device_train_batch_size": [4, 8]
 }
 
 # Generate all possible combinations
@@ -66,16 +65,29 @@ for r, alpha, dropout, lr, bs in all_combinations:
 
 print(f"Total valid combinations: {len(valid_combinations)}")
 # Randomly sample 50 unique combinations from valid ones
-sampled_combinations = random.sample(valid_combinations, min(2, len(valid_combinations)))
+sampled_combinations = random.sample(valid_combinations, min(50, len(valid_combinations)))
 
 results = []
 run_dir = Path("llama_search_runs")
 run_dir.mkdir(exist_ok=True)
 
+# Read completed config names
+completed_configs = set()
+log_file_path = run_dir / "search_progress_log.txt"
+if log_file_path.exists():
+    with open(log_file_path, "r") as log_file:
+        for line in log_file:
+            if line.strip():
+                config_name = line.split("|")[0].strip()
+                completed_configs.add(config_name)
+
 
 # === Stage 1: Training and Evaluation Loop ===
 for idx, (r, lora_alpha, lora_dropout, learning_rate, batch_size) in enumerate(sampled_combinations):
     config_name = f"run_{idx}_r{r}_alpha{lora_alpha}_drop{lora_dropout}_lr{learning_rate}_bs{batch_size}"
+    if config_name in completed_configs:
+        print(f"⏭️ Skipping already completed config: {config_name}")
+        continue
     output_dir = run_dir / config_name
     output_dir.mkdir(exist_ok=True)
     print(f"\n=== Running config {idx+1}/{len(sampled_combinations)}: {config_name} ===")
@@ -87,7 +99,7 @@ for idx, (r, lora_alpha, lora_dropout, learning_rate, batch_size) in enumerate(s
         f"--lora_alpha={lora_alpha}",
         f"--lora_dropout={lora_dropout}",
         f"--learning_rate={learning_rate}",
-        "--num_train_epochs=1",
+        "--num_train_epochs=6",
         f"--per_device_train_batch_size={batch_size}",
         f"--model_output_base={str(output_dir)}"
     ]
@@ -167,6 +179,8 @@ for idx, (r, lora_alpha, lora_dropout, learning_rate, batch_size) in enumerate(s
             "model_subdir": str(model_subdir)
         }
         results.append(result)
+        with open(run_dir / "search_progress_log.txt", "a") as log_file:
+            log_file.write(f"{config_name} | macro_f1: {macro_f1} | val_loss: {val_loss}\n")
         print(f"val_loss: {val_loss}")
         print(f"macro_f1: {macro_f1}")
     else:
@@ -225,6 +239,7 @@ if best_f1:
         f"--lora_alpha={best_cfg['lora_alpha']}",
         f"--lora_dropout={best_cfg['lora_dropout']}",
         f"--learning_rate={best_cfg['learning_rate']}",
+        "--num_train_epochs=6",
         f"--per_device_train_batch_size={best_cfg['per_device_train_batch_size']}",
         f"--model_output_base={str(final_dir)}"
     ]

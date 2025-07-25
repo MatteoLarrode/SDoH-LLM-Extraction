@@ -117,7 +117,7 @@ if __name__ == "__main__":
     parser.add_argument("--learning_rate", type=float, required=True, help="Learning rate")
     # parser.add_argument("--dataloader_num_workers", type=int, default=4, help="Number of dataloader workers")
     parser.add_argument("--num_frozen_layers", type=int, default=10, help="Number of bottom RoBERTa layers to freeze")
-    parser.add_argument("--max_length", type=int, default=128, help="Maximum sequence length")
+    parser.add_argument("--max_length", type=int, default=64, help="Maximum sequence length")
     parser.add_argument("--cache_dir", type=str, default="/data/resource/huggingface/hub", help="HuggingFace model cache directory")
     parser.add_argument("--run_name", type=str, default=None, help="Custom name for this run (optional)")
     args = parser.parse_args()
