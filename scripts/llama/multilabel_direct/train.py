@@ -15,6 +15,10 @@ from transformers import (
     DataCollatorForLanguageModeling,
 )
 
+from sklearn.metrics import f1_score
+import numpy as np
+import json
+
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[3]))
@@ -40,6 +44,9 @@ def main(args):
         args.model_name,
         cache_dir=args.cache_dir,
         device=0,
+        r=args.r,
+        lora_alpha=args.lora_alpha,
+        lora_dropout=args.lora_dropout,
     )
     print("✅ LoRA model loaded.")
 
@@ -63,6 +70,12 @@ def main(args):
     train_dataset = train_dataset.map(tokenize, batched=True)
     val_dataset = val_dataset.map(tokenize, batched=True)
     print("✂️ Tokenization complete.")
+
+    def compute_metrics(eval_preds):
+        logits, labels = eval_preds
+        preds = np.argmax(logits, axis=-1)
+        macro_f1 = f1_score(labels, preds, average='macro')
+        return {"macro_f1": macro_f1}
 
     # TrainingArguments
     training_args = TrainingArguments(
@@ -93,16 +106,23 @@ def main(args):
         eval_dataset=val_dataset,
         tokenizer=tokenizer,
         data_collator=data_collator,
+        compute_metrics=compute_metrics,
     )
 
     print("🚀 Starting training...")
     trainer.train()
     print("✅ Training complete.")
     
-    # Save model and tokenizer
-    trainer.save_model(model_output_dir)
-    tokenizer.save_pretrained(model_output_dir)
-    print("💾 Tokenizer and model saved.")
+    results = trainer.evaluate()
+    results_file = os.path.join(model_output_dir, "eval_results.json")
+    with open(results_file, "w") as f:
+        json.dump(results, f, indent=2)
+    print("📊 Evaluation results:", results)
+
+    if not args.search_mode:
+        trainer.save_model(model_output_dir)
+        tokenizer.save_pretrained(model_output_dir)
+        print("💾 Tokenizer and model saved.")
     print(f"✅ Model saved to {model_output_dir}")
 
 if __name__ == "__main__":
@@ -116,5 +136,9 @@ if __name__ == "__main__":
     parser.add_argument("--num_train_epochs", type=int, default=6)
     parser.add_argument("--per_device_train_batch_size", type=int, default=8)
     parser.add_argument("--per_device_eval_batch_size", type=int, default=8)
+    parser.add_argument("--r", type=int, default=8)
+    parser.add_argument("--lora_alpha", type=int, default=16)
+    parser.add_argument("--lora_dropout", type=float, default=0.0)
+    parser.add_argument("--search_mode", action="store_true", help="Disable model saving for hyperparameter search")
     args = parser.parse_args()
     main(args)

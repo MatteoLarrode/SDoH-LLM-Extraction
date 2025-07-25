@@ -11,7 +11,15 @@ bnb_config = BitsAndBytesConfig(
     bnb_4bit_compute_dtype=torch.float16,
 )
 
-def load_lora_llama(base_model_path: str, adapter_path: str = None, cache_dir: str = None, device: int = 0):
+def load_lora_llama(
+    base_model_path: str,
+    adapter_path: str = None,
+    cache_dir: str = None,
+    device: int = 0,
+    r: int = 8,
+    lora_alpha: int = 16,
+    lora_dropout: float = 0.0,
+):
     # Load base model in 4-bit
     base_model = AutoModelForCausalLM.from_pretrained(
         base_model_path,
@@ -35,10 +43,10 @@ def load_lora_llama(base_model_path: str, adapter_path: str = None, cache_dir: s
     else:
         print(f"🧪 LoRA training setup — no adapter_path provided.")
         lora_config = LoraConfig(
-            r=8,
-            lora_alpha=16,
+            r=r,
+            lora_alpha=lora_alpha,
+            lora_dropout=lora_dropout,
             target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
-            lora_dropout=0.0,
             bias="none",
             task_type=TaskType.CAUSAL_LM,
         )
