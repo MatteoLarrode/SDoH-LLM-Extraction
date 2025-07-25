@@ -71,12 +71,6 @@ def main(args):
     val_dataset = val_dataset.map(tokenize, batched=True)
     print("✂️ Tokenization complete.")
 
-    def compute_metrics(eval_preds):
-        logits, labels = eval_preds
-        preds = np.argmax(logits, axis=-1)
-        macro_f1 = f1_score(labels, preds, average='macro')
-        return {"macro_f1": macro_f1}
-
     # TrainingArguments
     training_args = TrainingArguments(
         output_dir=model_output_dir,
@@ -105,8 +99,7 @@ def main(args):
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
         tokenizer=tokenizer,
-        data_collator=data_collator,
-        compute_metrics=compute_metrics,
+        data_collator=data_collator
     )
 
     print("🚀 Starting training...")

@@ -29,7 +29,7 @@ def main(args):
     # Format output directory
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_dir_name = f"{args.model_name.split('/')[-1]}_bs{args.per_device_train_batch_size}_lr{args.learning_rate}_epochs{args.num_train_epochs}_{timestamp}"
-    model_output_dir = os.path.join("results/model_training/llama_multilabel_direct_adverse", output_dir_name)
+    model_output_dir = os.path.join(args.model_output_base, output_dir_name)
     os.makedirs(model_output_dir, exist_ok=True)
     print(f"📁 Model output directory: {model_output_dir}")
 
@@ -70,15 +70,9 @@ def main(args):
     val_dataset = val_dataset.map(tokenize, batched=True)
     print("✂️ Tokenization complete.")
 
-    def compute_metrics(eval_preds):
-        logits, labels = eval_preds
-        preds = np.argmax(logits, axis=-1)
-        macro_f1 = f1_score(labels, preds, average='macro')
-        return {"macro_f1": macro_f1}
-
     # TrainingArguments
     training_args = TrainingArguments(
-        output_dir=model_output_dir,
+        output_dir= model_output_dir,
         label_names=["labels"],
         eval_strategy="epoch",
         save_strategy="epoch",
@@ -104,8 +98,7 @@ def main(args):
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
         tokenizer=tokenizer,
-        data_collator=data_collator,
-        compute_metrics=compute_metrics,
+        data_collator=data_collator
     )
 
     print("🚀 Starting training...")
@@ -118,11 +111,9 @@ def main(args):
         json.dump(results, f, indent=2)
     print("📊 Evaluation results:", results)
 
-    if not args.search_mode:
-        # Save model and tokenizer only if not in search mode
-        trainer.save_model(model_output_dir)
-        tokenizer.save_pretrained(model_output_dir)
-        print("💾 Tokenizer and model saved.")
+    trainer.save_model(model_output_dir)
+    tokenizer.save_pretrained(model_output_dir)
+    print("💾 Tokenizer and model saved.")
     print(f"✅ Model saved to {model_output_dir}")
 
 if __name__ == "__main__":
@@ -139,6 +130,5 @@ if __name__ == "__main__":
     parser.add_argument("--r", type=int, default=8)
     parser.add_argument("--lora_alpha", type=int, default=16)
     parser.add_argument("--lora_dropout", type=float, default=0.0)
-    parser.add_argument("--search_mode", action="store_true", help="Disable model saving for hyperparameter search")
     args = parser.parse_args()
     main(args)
