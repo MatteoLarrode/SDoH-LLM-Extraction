@@ -2,15 +2,15 @@ import os
 import shutil
 import subprocess
 import random
-import json
 from datetime import datetime
 from pathlib import Path
+import json
 
 # Define random search space
 learning_rates = [1e-5, 2e-5, 3e-5, 5e-5, 7e-5]
 batch_sizes = [4, 8, 16]
 dropouts = [0.0, 0.1, 0.2, 0.3, 0.5]
-frozen_layers = [0, 2, 4, 6, 8, 10]
+frozen_layers = [2, 4, 6, 8]
 
 # Fixed parameters
 train_file = "data/processed/train-test/train_set.csv"
@@ -18,7 +18,7 @@ val_file = "data/processed/train-test/val_set.csv"
 model_output_base = Path("results/random_searches/roberta_search_runs")
 model_output_base.mkdir(parents=True, exist_ok=True)
 log_file_path = model_output_base / "search_log.txt"
-eval_metrics_path = model_output_base / "eval_metrics.txt"
+eval_loss_path = model_output_base / "eval_loss.txt"
 script_path = "scripts/roberta/train.py"
 model_name = "roberta-base"
 
@@ -27,7 +27,7 @@ with open(log_file_path, "a") as log_file:
     log_file.write(f"\n==== Random Search started at {datetime.now()} ====\n")
 
 # Perform random search
-num_trials = 50
+num_trials = 100
 for idx in range(num_trials):
     lr = random.choice(learning_rates)
     bs = random.choice(batch_sizes)
@@ -64,10 +64,8 @@ for idx in range(num_trials):
         with open(summary_path, "r") as f:
             summary = json.load(f)
         eval_loss = summary.get("eval_loss", "N/A")
-        eval_recall = summary.get("eval_recall", "N/A")
-        eval_f1 = summary.get("eval_f1", "N/A")
-        with open(eval_metrics_path, "a") as eval_log:
-            eval_log.write(f"{run_name},eval_loss={eval_loss},recall={eval_recall},f1={eval_f1}\n")
+        with open(eval_loss_path, "a") as eval_loss_log:
+            eval_loss_log.write(f"{run_name},eval_loss={eval_loss}\n")
         summary_line = (
             f"[SUMMARY] Run {idx+1}/{num_trials}: "
             f"lr={lr}, bs={bs}, drop={dropout}, frozen={frozen} -> eval_loss={eval_loss}"

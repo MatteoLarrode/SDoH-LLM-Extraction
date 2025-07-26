@@ -73,13 +73,6 @@ def main(args):
     
     count_parameters(model)
 
-    def compute_metrics(eval_pred):
-        logits, labels = eval_pred
-        # Convert logits to predictions (binary)
-        preds = (torch.tensor(logits) > 0).int().numpy()
-        labels = labels.astype(int)
-        precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average="binary")
-        return {"precision": precision, "recall": recall, "f1": f1}
 
     # Training setup
     training_args = TrainingArguments(
@@ -107,7 +100,6 @@ def main(args):
         eval_dataset=val_dataset,
         tokenizer=tokenizer,
         data_collator=DataCollatorWithPadding(tokenizer),
-        compute_metrics=compute_metrics,
     )
 
     print("[INFO] Trainer initialized. Starting training...")
@@ -123,9 +115,6 @@ def main(args):
         "dropout": args.dropout,
         "num_frozen_layers": args.num_frozen_layers,
         "eval_loss": metrics.get("eval_loss"),
-        "eval_precision": metrics.get("precision"),
-        "eval_recall": metrics.get("recall"),
-        "eval_f1": metrics.get("f1"),
         "timestamp": timestamp,
     }
 
