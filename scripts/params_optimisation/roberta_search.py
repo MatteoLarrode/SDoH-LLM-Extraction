@@ -2,6 +2,7 @@ import os
 import shutil
 import subprocess
 import random
+import json
 from datetime import datetime
 from pathlib import Path
 
@@ -17,6 +18,7 @@ val_file = "data/processed/train-test/val_set.csv"
 model_output_base = Path("results/random_searches/roberta_search_runs")
 model_output_base.mkdir(parents=True, exist_ok=True)
 log_file_path = model_output_base / "search_log.txt"
+eval_metrics_path = model_output_base / "eval_metrics.txt"
 script_path = "scripts/roberta/train.py"
 model_name = "roberta-base"
 
@@ -56,12 +58,32 @@ for idx in range(num_trials):
 
     result = subprocess.run(cmd, capture_output=True, text=True)
 
+    # Try to parse evaluation summary before cleanup
+    summary_path = run_output_dir / "eval_summary.json"
+    if summary_path.exists():
+        with open(summary_path, "r") as f:
+            summary = json.load(f)
+        eval_loss = summary.get("eval_loss", "N/A")
+        eval_recall = summary.get("eval_recall", "N/A")
+        eval_f1 = summary.get("eval_f1", "N/A")
+        with open(eval_metrics_path, "a") as eval_log:
+            eval_log.write(f"{run_name},eval_loss={eval_loss},recall={eval_recall},f1={eval_f1}\n")
+        summary_line = (
+            f"[SUMMARY] Run {idx+1}/{num_trials}: "
+            f"lr={lr}, bs={bs}, drop={dropout}, frozen={frozen} -> eval_loss={eval_loss}"
+        )
+    else:
+        summary_line = f"[SUMMARY] Run {idx+1}/{num_trials}: No eval_summary.json found."
+
+    # Log output, errors, and summary
     with open(log_file_path, "a") as log_file:
         log_file.write(f"\n--- Run: {run_name} ---\n")
         log_file.write(result.stdout)
         log_file.write(result.stderr)
-        log_file.write(f"\n[INFO] Run completed at {datetime.now()}.\n")
+        log_file.write(f"{summary_line}\n")
+        log_file.write(f"[INFO] Run completed at {datetime.now()}.\n")
 
+    print(summary_line)
     print(f"[INFO] Run complete. Cleaning up model directory: {run_output_dir}")
 
     # Remove model directory to save space

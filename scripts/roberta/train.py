@@ -12,6 +12,8 @@ from dataset import BinarySDoHDataset, is_sdoh_label
 from model import RobertaBinaryClassifierWithWeight
 from datetime import datetime
 import os
+import json
+from sklearn.metrics import precision_recall_fscore_support
 
 def main(args):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -71,6 +73,14 @@ def main(args):
     
     count_parameters(model)
 
+    def compute_metrics(eval_pred):
+        logits, labels = eval_pred
+        # Convert logits to predictions (binary)
+        preds = (torch.tensor(logits) > 0).int().numpy()
+        labels = labels.astype(int)
+        precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average="binary")
+        return {"precision": precision, "recall": recall, "f1": f1}
+
     # Training setup
     training_args = TrainingArguments(
         output_dir=output_dir,
@@ -97,11 +107,30 @@ def main(args):
         eval_dataset=val_dataset,
         tokenizer=tokenizer,
         data_collator=DataCollatorWithPadding(tokenizer),
+        compute_metrics=compute_metrics,
     )
 
     print("[INFO] Trainer initialized. Starting training...")
     trainer.train()
     print("[INFO] Training complete.")
+
+    # Evaluate and save summary metrics to JSON
+    metrics = trainer.evaluate()
+    summary = {
+        "run_name": run_name,
+        "learning_rate": args.learning_rate,
+        "batch_size": args.per_device_train_batch_size,
+        "dropout": args.dropout,
+        "num_frozen_layers": args.num_frozen_layers,
+        "eval_loss": metrics.get("eval_loss"),
+        "eval_precision": metrics.get("precision"),
+        "eval_recall": metrics.get("recall"),
+        "eval_f1": metrics.get("f1"),
+        "timestamp": timestamp,
+    }
+
+    with open(os.path.join(output_dir, "eval_summary.json"), "w") as f:
+        json.dump(summary, f)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Fine-tune RoBERTa for binary SDoH classification.")
