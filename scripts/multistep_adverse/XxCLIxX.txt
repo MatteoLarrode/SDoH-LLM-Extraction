@@ -3,3 +3,10 @@ python scripts/multistep_adverse/eval.py \
   --roberta_model_dir results/model_training/roberta_binary/roberta-base_bs16_lr9e-05_20250709_170452/checkpoint-24 \
   --llama_model_dir results/model_training/llama_multilabel_direct_adverse/Llama-3.1-8B-Instruct_bs8_lr9e-05_epochs6_20250717_201311 \
   --pos_weight 1.5251
+
+### Post Random Searches ###
+python scripts/multistep_adverse/eval.py \
+  --test_data_file data/processed/train-test/test_set.csv \
+  --roberta_model_dir results/model_training/roberta_binary/best_model/roberta-base_bs4_lr7e-05_20250726_140551/checkpoint-66 \
+  --llama_model_dir results/model_training/llama_multilabel_direct_adverse/best_model/Llama-3.1-8B-Instruct_bs8_lr3e-05_epochs6_20250726_031804 \
+  --pos_weight 1.1757
