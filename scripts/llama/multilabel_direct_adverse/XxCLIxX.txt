@@ -15,6 +15,8 @@ python scripts/llama/multilabel_direct_adverse/eval.py \
   --test_data_file data/processed/train-test/test_set.csv \
   --model_dir results/model_training/llama_multilabel_direct_adverse/Llama-3.1-8B-Instruct_bs8_lr9e-05_epochs6_20250717_201311
 
+
+#### Eval with result of the random search ####
 python scripts/llama/multilabel_direct_adverse/eval.py \
   --test_data_file data/processed/train-test/test_set.csv \
   --model_dir results/model_training/llama_multilabel_direct_adverse/best_model/Llama-3.1-8B-Instruct_bs8_lr3e-05_epochs6_20250726_031804

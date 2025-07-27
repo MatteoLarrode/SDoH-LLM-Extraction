@@ -13,6 +13,7 @@ def main(args):
     # Load test data
     test_df = pd.read_csv(args.test_data_file)
     test_df["binary_label"] = test_df["completion"].apply(is_sdoh_label)
+    dataset_name = os.path.splitext(os.path.basename(args.test_data_file))[0]
 
     # Load tokenizer and config from trained model directory
     tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
@@ -38,7 +39,18 @@ def main(args):
     y_true = test_df["binary_label"].values
 
     print("\n📊 Classification Report:")
-    print(classification_report(y_true, y_pred, target_names=["NoSDoH", "Any SDoH"]))
+    report_str = classification_report(y_true, y_pred, target_names=["NoSDoH", "Any SDoH"])
+    print(report_str)
+
+    # Generate classification report dictionary
+    report_dict = classification_report(y_true, y_pred, target_names=["NoSDoH", "Any SDoH"], output_dict=True)
+
+    # Save classification metrics to CSV
+    perf_df = pd.DataFrame(report_dict).T  # Transpose to get labels as rows
+    perf_df.index.name = 'label'
+    perf_path = os.path.join(args.model_dir, f"eval_performance_{dataset_name}.csv")
+    perf_df.to_csv(perf_path)
+    print(f"✅ Evaluation performance for {dataset_name} saved to {perf_path}")
 
     # Save results
     results_df = pd.DataFrame({
@@ -48,9 +60,9 @@ def main(args):
         "Prob_SDoH": probs
     })
     os.makedirs(args.model_dir, exist_ok=True)
-    results_path = os.path.join(args.model_dir, "binary_predictions.csv")
+    results_path = os.path.join(args.model_dir, f"binary_predictions_{dataset_name}.csv")
     results_df.to_csv(results_path, index=False)
-    print(f"\n✅ Predictions saved to {results_path}")
+    print(f"\n✅ Predictions for {dataset_name} saved to {results_path}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

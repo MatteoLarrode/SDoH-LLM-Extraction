@@ -39,7 +39,7 @@ def run_roberta_binary_inference(test_data_file: str, model_dir: str, pos_weight
 
     # Get predictions
     probs = torch.sigmoid(torch.tensor(outputs.predictions)).numpy().flatten()
-    y_pred = (probs > 0.5).astype(int)
+    y_pred = (probs > 0.4).astype(int) # Updated threshold
 
     # Add predictions to DataFrame
     test_df["roberta_prob_sdoh"] = probs

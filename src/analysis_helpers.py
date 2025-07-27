@@ -6,22 +6,6 @@ import re
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Colour palette
-# From https://brand.ifrc.org/ifrc-brand-system/basics/colour
-colour_palette = {
-    'ifrc_red': '#EE2435',
-    'ifrc_darkblue': '#011E41',
-    'dark_green': '#009775',
-    'medium_green': '#00AB84',
-    'light_green': '#47D7AC',
-    'medium_blue': '#8DCDE2',
-    'light_blue': '#CCf5FC',
-    'medium_orange': '#FF8200',
-    'light_orange': '#FFB25B',
-    'medium_purple': '#512D6D',
-    'light_purple': '#958DBE',
-    'grey': '#A7A8AA',
-}
 
 def load_and_merge_structured_and_predictions(
     structured_path: str,

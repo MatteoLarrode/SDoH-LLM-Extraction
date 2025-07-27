@@ -17,7 +17,7 @@ from sklearn.metrics import precision_recall_fscore_support
 
 def main(args):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    run_name = args.run_name or f"{args.model_name}_bs{args.per_device_train_batch_size}_lr{args.learning_rate}_{timestamp}"
+    run_name = args.run_name or f"{args.model_name}_bs{args.per_device_train_batch_size}_lr{args.learning_rate}_frozen{args.num_frozen_layers}_{timestamp}"
     output_dir = os.path.join(args.model_output_dir, run_name)
 
     os.makedirs(output_dir, exist_ok=True)
