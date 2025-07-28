@@ -23,18 +23,34 @@ def prepare_adverse_only_dataset(csv_path, prompt_builder=build_sdoh_adverse_onl
     df["completion"] = df["completion"].apply(strip_protective_labels)
     df["text"] = df.apply(lambda row: prompt_builder(row["Sentence"], row["completion"]), axis=1)
 
-    dataset = Dataset.from_pandas(df[["text", "completion"]])
+    if 'case_ref' in df.columns:
+        dataset = Dataset.from_pandas(df[["case_ref", "text", "completion"]])
+    else:
+        dataset = Dataset.from_pandas(df[["text", "completion"]])
     return dataset
 
 def prepare_adverse_only_dataset_infer(data, prompt_builder=build_sdoh_adverse_only_prompt_infer):
+    """
+    Prepares a dataset for inference on adverse-only SDoH extraction.
+
+    Parameters:
+        data (str or pd.DataFrame): Path to CSV file or DataFrame with at least a 'Sentence' column.
+        prompt_builder (function): Function to create a prompt from a sentence.
+
+    Returns:
+        pd.DataFrame: Original data with an added 'prompt' column.
+                      If 'completion' exists, it's cleaned using strip_protective_labels.
+    """
     if isinstance(data, str):
         df = pd.read_csv(data)
     elif isinstance(data, pd.DataFrame):
         df = data.copy()
     else:
-        raise ValueError("Expected a file path or DataFrame.")
+        raise ValueError("Expected a file path or a DataFrame.")
 
-    if 'completion' in df.columns:
+    df["prompt"] = df["Sentence"].apply(prompt_builder)
+
+    if "completion" in df.columns:
         df["completion"] = df["completion"].apply(strip_protective_labels)
-    df["prompt"] = df["Sentence"].apply(lambda s: prompt_builder(s))
+
     return df

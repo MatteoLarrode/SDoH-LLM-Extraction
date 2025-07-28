@@ -47,9 +47,9 @@ def run_roberta_binary_inference(data_file: str, model_dir: str, pos_weight: flo
     df["roberta_pred_sdoh"] = y_pred
 
     if 'completion' in df.columns:
-        return df[["Sentence", "completion", "roberta_pred_sdoh", "roberta_prob_sdoh"]]
+        return df[["case_ref", "Sentence", "completion", "roberta_pred_sdoh", "roberta_prob_sdoh"]]
     else:
-        return df[["Sentence", "roberta_pred_sdoh", "roberta_prob_sdoh"]]
+        return df[["case_ref", "Sentence", "roberta_pred_sdoh", "roberta_prob_sdoh"]]
 
 def extract_list_output(output_text: str) -> str:
     start = output_text.find("<LIST>")
@@ -96,7 +96,11 @@ def run_llama_on_flagged_sentences(df_flagged: pd.DataFrame, model_dir: str, cac
         predictions.append(prediction)
 
     df_prompted["generated_completion"] = predictions
-    return df_prompted[["Sentence", "generated_completion"]]
+
+    if "case_ref" in df_prompted.columns:
+        return df_prompted[["case_ref", "Sentence", "generated_completion"]]
+    else:
+        return df_prompted[["Sentence", "generated_completion"]]
 
 def run_two_step_pipeline(
     data_file: str,
@@ -122,7 +126,11 @@ def run_two_step_pipeline(
     )
 
     # Merge and fill
-    final_df = roberta_outputs.merge(llama_df, on="Sentence", how="left")
+    merge_cols = ["Sentence"]
+    if "case_ref" in roberta_outputs.columns and "case_ref" in llama_df.columns:
+        merge_cols.insert(0, "case_ref")
+
+    final_df = roberta_outputs.merge(llama_df, on=merge_cols, how="left")
     final_df["final_prediction"] = final_df.apply(
         lambda row: row["generated_completion"] if row["roberta_pred_sdoh"] == 1 else "<LIST>NoSDoH</LIST>",
         axis=1
@@ -132,11 +140,6 @@ def run_two_step_pipeline(
     if "completion" in final_df.columns:
         final_df["completion"] = final_df["completion"].apply(strip_protective_labels)
 
-    # Save only required columns
-    save_cols = ["case_ref", "Sentence", "final_prediction"]
-    # Ensure 'case_ref' exists in the DataFrame to avoid errors
-    if "case_ref" not in final_df.columns:
-        final_df["case_ref"] = None
-
-    final_df[save_cols].to_csv(output_file, index=False)
+    # Save final predictions
+    final_df.to_csv(output_file, index=False)
     print(f"✅ Saved two-step predictions to {output_file}")

@@ -126,6 +126,28 @@ def main(args):
             )
 
             os.remove(temp_path)  # clean up
+
+            # Aggregate sentence-level predictions to case-level
+            try:
+                df_preds = pd.read_csv(out_path)
+                df_preds = df_preds[df_preds["final_prediction"].notnull()]
+
+                # Group by case_ref and collect all predicted labels
+                def union_sdoh_lists(group):
+                    sdoh_set = set()
+                    for val in group["final_prediction"]:
+                        if isinstance(val, str) and val.startswith("<LIST>") and val.endswith("</LIST>"):
+                            contents = val[6:-7].strip()
+                            if contents and contents != "NoSDoH":
+                                sdoh_set.update([x.strip() for x in contents.split(",") if x.strip()])
+                    if not sdoh_set:
+                        return "<LIST>NoSDoH</LIST>"
+                    return f"<LIST>{', '.join(sorted(sdoh_set))}</LIST>"
+
+                df_case_level = df_preds.groupby("case_ref").apply(union_sdoh_lists, include_groups=False).reset_index(name="predicted_sdoh")
+                df_case_level.to_csv(out_path, index=False)
+            except Exception as e:
+                print(f"⚠️ Failed to aggregate case-level predictions for batch {i}: {e}")
         except Exception as e:
             print(f"❌ Failed on batch {i}: {e}")
 
