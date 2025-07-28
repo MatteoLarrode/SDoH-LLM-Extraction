@@ -34,6 +34,7 @@ def prepare_adverse_only_dataset_infer(data, prompt_builder=build_sdoh_adverse_o
     else:
         raise ValueError("Expected a file path or DataFrame.")
 
-    df["completion"] = df["completion"].apply(strip_protective_labels)
+    if 'completion' in df.columns:
+        df["completion"] = df["completion"].apply(strip_protective_labels)
     df["prompt"] = df["Sentence"].apply(lambda s: prompt_builder(s))
     return df

@@ -14,10 +14,11 @@ from scripts.roberta.model import RobertaBinaryClassifierWithWeight
 from scripts.llama.shared_utils.model import load_lora_llama
 from scripts.llama.multilabel_direct.prepare_dataset import prepare_multilabel_dataset_infer, strip_polarity
 
-def run_roberta_binary_inference(test_data_file: str, model_dir: str, pos_weight: float):
+def run_roberta_binary_inference(data_file: str, model_dir: str, pos_weight: float):
     # Load test data
-    test_df = pd.read_csv(test_data_file)
-    test_df["binary_label"] = test_df["completion"].apply(is_sdoh_label)
+    test_df = pd.read_csv(data_file)
+    if "completion" in test_df.columns:
+        test_df["binary_label"] = test_df["completion"].apply(is_sdoh_label)
 
     # Load tokenizer and config from trained model directory
     tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
@@ -95,7 +96,7 @@ def run_llama_on_flagged_sentences(df_flagged: pd.DataFrame, model_dir: str, cac
     return df_prompted[["Sentence", "generated_completion"]]
 
 def run_two_step_pipeline(
-    test_data_file: str,
+    data_file: str,
     roberta_model_dir: str,
     llama_model_dir: str,
     pos_weight: float,
@@ -106,7 +107,7 @@ def run_two_step_pipeline(
 
     # Step 1: RoBERTa
     roberta_outputs = run_roberta_binary_inference(
-        test_data_file=test_data_file,
+        data_file=data_file,
         model_dir=roberta_model_dir,
         pos_weight=pos_weight
     )
@@ -124,9 +125,14 @@ def run_two_step_pipeline(
         axis=1
     )
 
-    # Strip polarity from completion in final predictions
-    final_df["completion"] = final_df["completion"].apply(strip_polarity)
+    # Strip polarity from completion in final predictions if column exists
+    if "completion" in final_df.columns:
+        final_df["completion"] = final_df["completion"].apply(strip_polarity)
 
-    # Save
-    final_df.to_csv(output_file, index=False)
+    # Ensure case_ref column exists
+    if "case_ref" not in final_df.columns:
+        final_df["case_ref"] = None
+
+    # Save only required columns
+    final_df[["case_ref", "Sentence", "final_prediction"]].to_csv(output_file, index=False)
     print(f"✅ Saved two-step predictions to {output_file}")

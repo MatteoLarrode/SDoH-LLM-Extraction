@@ -66,7 +66,6 @@ def prepare_batched_csvs(referral_path, output_dir, batch_size):
     # Keep only required columns for inference
     df = df[["case_ref", "Referral Notes (depersonalised)"]].copy()
     df = df.rename(columns={"Referral Notes (depersonalised)": "referral_note"})
-    df["completion"] = "<LIST>"
 
     total = len(df)
     num_batches = math.ceil(total / batch_size)
@@ -91,10 +90,8 @@ def main(args):
     base_output_dir = os.path.join("results/inference/full_referrals", f"{args.data_id}_{timestamp}")
     os.makedirs(base_output_dir, exist_ok=True)
 
-    # Step 1: Prepare sentence batches
     batch_paths = prepare_batched_csvs(args.referral_path, os.path.join(base_output_dir, "batches"), args.batch_size)
 
-    # Step 2: Run two-step inference on each batch
     for i, batch_path in enumerate(batch_paths):
         print(f"\n🚀 Running batch {i+1}/{len(batch_paths)}")
         out_path = os.path.join(base_output_dir, f"predictions_batch_{i:03d}.csv")
@@ -102,13 +99,33 @@ def main(args):
             print("⏭️ Already exists, skipping.")
             continue
         try:
+            # Load case-level batch
+            df_batch = pd.read_csv(batch_path)
+            all_sentences = []
+            for _, row in df_batch.iterrows():
+                case_ref = row["case_ref"]
+                note = row["referral_note"]
+                for sentence in sentence_splitter(note):
+                    all_sentences.append({
+                        "case_ref": case_ref,
+                        "Sentence": sentence
+                    })
+            df_sentences = pd.DataFrame(all_sentences)
+
+            # Save to temp file
+            temp_path = os.path.join(base_output_dir, f"temp_sentences_batch_{i:03d}.csv")
+            df_sentences.to_csv(temp_path, index=False)
+
+            # Run two-step model
             run_two_step_pipeline(
-                test_data_file=batch_path,
+                data_file=temp_path,
                 roberta_model_dir=args.roberta_model_dir,
                 llama_model_dir=args.llama_model_dir,
                 pos_weight=args.pos_weight,
                 output_file=out_path
             )
+
+            os.remove(temp_path)  # clean up
         except Exception as e:
             print(f"❌ Failed on batch {i}: {e}")
 

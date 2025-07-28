@@ -8,7 +8,8 @@ def is_sdoh_label(label_str):
 class BinarySDoHDataset(Dataset):
     def __init__(self, dataframe, tokenizer, max_length=128):
         self.texts = dataframe["Sentence"].tolist()
-        self.labels = dataframe["binary_label"].tolist()
+        self.has_labels = "binary_label" in dataframe.columns
+        self.labels = dataframe["binary_label"].tolist() if self.has_labels else None
         self.tokenizer = tokenizer
         self.max_length = max_length
 
@@ -24,5 +25,6 @@ class BinarySDoHDataset(Dataset):
             return_tensors="pt"
         )
         item = {k: v.squeeze() for k, v in encoding.items()}
-        item["labels"] = torch.tensor(self.labels[idx], dtype=torch.float)
+        if self.has_labels:
+            item["labels"] = torch.tensor(self.labels[idx], dtype=torch.float)
         return item

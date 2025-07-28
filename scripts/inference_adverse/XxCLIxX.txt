@@ -18,7 +18,7 @@ python scripts/inference_adverse/infer_adverse_sdoh_twostep.py \
   --referral_path data/processed/brc-cleaned/toy_referrals.csv \
   --roberta_model_dir results/model_training/roberta_binary/best_model/roberta-base_bs4_lr7e-05_20250726_140551/checkpoint-66 \
   --llama_model_dir results/model_training/llama_multilabel_direct_adverse/best_model/Llama-3.1-8B-Instruct_bs8_lr3e-05_epochs6_20250726_031804 \
-  --batch_size 10 \
+  --batch_size 5 \
   --data_id toy_referrals
 
 python scripts/inference_adverse/infer_adverse_sdoh_twostep.py \

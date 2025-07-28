@@ -14,10 +14,11 @@ from scripts.roberta.model import RobertaBinaryClassifierWithWeight
 from scripts.llama.shared_utils.model import load_lora_llama
 from scripts.llama.multilabel_direct_adverse.prepare_dataset import prepare_adverse_only_dataset_infer, strip_protective_labels
 
-def run_roberta_binary_inference(test_data_file: str, model_dir: str, pos_weight: float):
+def run_roberta_binary_inference(data_file: str, model_dir: str, pos_weight: float):
     # Load test data
-    test_df = pd.read_csv(test_data_file)
-    test_df["binary_label"] = test_df["completion"].apply(is_sdoh_label)
+    df = pd.read_csv(data_file)
+    if "completion" in df.columns:
+        df["binary_label"] = df["completion"].apply(is_sdoh_label)
 
     # Load tokenizer and config from trained model directory
     tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
@@ -31,21 +32,24 @@ def run_roberta_binary_inference(test_data_file: str, model_dir: str, pos_weight
     )
 
     # Dataset
-    test_dataset = BinarySDoHDataset(test_df, tokenizer)
+    dataset = BinarySDoHDataset(df, tokenizer)
 
     # Trainer
     trainer = Trainer(model=model, tokenizer=tokenizer)
-    outputs = trainer.predict(test_dataset)
+    outputs = trainer.predict(dataset)
 
     # Get predictions
     probs = torch.sigmoid(torch.tensor(outputs.predictions)).numpy().flatten()
     y_pred = (probs > 0.4).astype(int) # Updated threshold
 
     # Add predictions to DataFrame
-    test_df["roberta_prob_sdoh"] = probs
-    test_df["roberta_pred_sdoh"] = y_pred
+    df["roberta_prob_sdoh"] = probs
+    df["roberta_pred_sdoh"] = y_pred
 
-    return test_df[["Sentence", "completion", "roberta_pred_sdoh", "roberta_prob_sdoh"]]
+    if 'completion' in df.columns:
+        return df[["Sentence", "completion", "roberta_pred_sdoh", "roberta_prob_sdoh"]]
+    else:
+        return df[["Sentence", "roberta_pred_sdoh", "roberta_prob_sdoh"]]
 
 def extract_list_output(output_text: str) -> str:
     start = output_text.find("<LIST>")
@@ -95,7 +99,7 @@ def run_llama_on_flagged_sentences(df_flagged: pd.DataFrame, model_dir: str, cac
     return df_prompted[["Sentence", "generated_completion"]]
 
 def run_two_step_pipeline(
-    test_data_file: str,
+    data_file: str,
     roberta_model_dir: str,
     llama_model_dir: str,
     pos_weight: float,
@@ -106,7 +110,7 @@ def run_two_step_pipeline(
 
     # Step 1: RoBERTa
     roberta_outputs = run_roberta_binary_inference(
-        test_data_file=test_data_file,
+        data_file=data_file,
         model_dir=roberta_model_dir,
         pos_weight=pos_weight
     )
@@ -124,9 +128,15 @@ def run_two_step_pipeline(
         axis=1
     )
 
-    # Strip polarity from completion in final predictions
-    final_df["completion"] = final_df["completion"].apply(strip_protective_labels)
+    # Strip polarity from completion in final predictions if completion exists
+    if "completion" in final_df.columns:
+        final_df["completion"] = final_df["completion"].apply(strip_protective_labels)
 
-    # Save
-    final_df.to_csv(output_file, index=False)
+    # Save only required columns
+    save_cols = ["case_ref", "Sentence", "final_prediction"]
+    # Ensure 'case_ref' exists in the DataFrame to avoid errors
+    if "case_ref" not in final_df.columns:
+        final_df["case_ref"] = None
+
+    final_df[save_cols].to_csv(output_file, index=False)
     print(f"✅ Saved two-step predictions to {output_file}")

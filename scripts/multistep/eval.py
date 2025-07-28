@@ -34,14 +34,21 @@ def main(args):
     output_file = os.path.join(output_dir, "two_step_predictions.csv")
 
     run_two_step_pipeline(
-        test_data_file=args.test_data_file,
+        data_file=args.test_data_file,
         roberta_model_dir=args.roberta_model_dir,
         llama_model_dir=args.llama_model_dir,
         pos_weight=args.pos_weight,
         output_file=output_file
     )
 
-    df = pd.read_csv(output_file)
+    df_pred = pd.read_csv(output_file)
+    df_input = pd.read_csv(args.test_data_file)
+
+    if "completion" not in df_input.columns:
+        raise ValueError("Gold labels (`completion`) not found in test data; cannot run evaluation.")
+
+    df = df_pred.merge(df_input[["Sentence", "completion"]], on="Sentence", how="left")
+
     if args.head:
         df = df.head(10)
 

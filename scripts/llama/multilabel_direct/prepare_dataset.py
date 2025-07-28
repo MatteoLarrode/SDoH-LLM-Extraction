@@ -35,6 +35,7 @@ def prepare_multilabel_dataset_infer(data, prompt_builder=build_sdoh_multilabel_
     else:
         raise ValueError("Expected a file path or DataFrame.")
 
-    df["completion"] = df["completion"].apply(strip_polarity)
+    if "completion" in df.columns:
+        df["completion"] = df["completion"].apply(strip_polarity)
     df["prompt"] = df["Sentence"].apply(lambda s: prompt_builder(s))
     return df
