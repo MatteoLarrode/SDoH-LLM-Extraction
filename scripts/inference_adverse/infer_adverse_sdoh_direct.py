@@ -117,7 +117,7 @@ def main(args):
 
     model_id = Path(args.model_dir).name
     data_id = Path(args.dataset_path).stem
-    folder_name = f"{data_id}__{model_id}_predictions"
+    folder_name = f"{data_id}_{model_id}_predictions"
     output_folder = os.path.join("results/inference", folder_name)
     os.makedirs(output_folder, exist_ok=True)
 

@@ -9,7 +9,7 @@ python scripts/inference_adverse/infer_adverse_sdoh_direct.py \
     --dataset_path data/processed/brc-cleaned/hiu_final.csv
 
 python scripts/inference_adverse/infer_adverse_sdoh_direct.py \
-    --results/model_training/llama_multilabel_direct_adverse/best_model/Llama-3.1-8B-Instruct_bs8_lr3e-05_epochs6_20250726_031804 \
+    --model_dir results/model_training/llama_multilabel_direct_adverse/best_model/Llama-3.1-8B-Instruct_bs8_lr3e-05_epochs6_20250726_031804 \
     --dataset_path data/processed/brc-cleaned/snap_final.csv
 
 
